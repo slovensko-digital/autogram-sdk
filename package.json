@@ -1,0 +1,47 @@
+{
+  "name": "autogram-sdk",
+  "version": "0.0.0",
+  "description": "SDK for Autogram signer  ",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup src/index.ts src/demo.ts --minify --dts --format cjs,esm,iife --out-dir dist",
+    "build:watch": "npm run build -- --watch",
+    "generate-autogram-api-types": "npx openapi-typescript http://localhost:37200/docs/server.yml --output src/autogram-api/lib/autogram-api.generated.ts && npx prettier --write src/autogram-api/lib/autogram-api.generated.ts",
+    "generate-avm-api-types": "npx openapi-typescript https://autogram.slovensko.digital/openapi.yaml --output src/avm-api/lib/avm-api.generated.ts && npx jscodeshift -t src/avm-api/lib/avm-api.codemod.ts src/avm-api/lib/avm-api.generated.ts --extension=ts && npx prettier --write src/avm-api/lib/avm-api.generated.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slovensko-digital/autogram-sdk.git"
+  },
+  "keywords": [
+    "autogram",
+    "pades",
+    "xades",
+    "eidas"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/slovensko-digital/autogram-sdk/issues"
+  },
+  "homepage": "https://github.com/slovensko-digital/autogram-sdk#readme",
+  "devDependencies": {
+    "idb-keyval": "^6.2.1",
+    "jest-environment-jsdom": "^29.7.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "bwip-js": "^4.5.1",
+    "cross-fetch": "^4.0.0",
+    "crypto-browserify": "^3.12.0",
+    "isomorphic-webcrypto": "^2.3.8",
+    "jose": "^5.9.6",
+    "js-base64": "^3.7.7",
+    "lit": "^3.1.2",
+    "stream-browserify": "^3.0.0",
+    "vm-browserify": "^1.1.2",
+    "zod": "^3.23.8"
+  }
+}
