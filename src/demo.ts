@@ -1,5 +1,5 @@
-import { FullClient } from ".";
-import { AvmSimpleChannel } from "./channel";
+import { FullClient, AvmSimpleChannel } from ".";
+
 async function main() {
   const client = new FullClient(new AvmSimpleChannel(), () => {});
   const filePicker = document.createElement("input");

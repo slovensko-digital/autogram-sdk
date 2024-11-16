@@ -1,5 +1,6 @@
 import {
   AutogramVMobileIntegrationInterfaceStateful,
+  AvmSimpleChannel,
   createUI,
   desktopApiClient,
   DesktopAutogramDocument,
@@ -21,11 +22,11 @@ export class FullClient {
   private ui: AutogramRoot;
   private signatureIndex = 1;
   private signerIdentificationListeners: (() => void)[];
-  private resetSignRequestCallback: () => void;
+  private resetSignRequestCallback?: () => void;
 
   public constructor(
-    avmChannel: AutogramVMobileIntegrationInterfaceStateful,
-    resetSignRequestCallback: () => void
+    avmChannel: AutogramVMobileIntegrationInterfaceStateful = new AvmSimpleChannel(),
+    resetSignRequestCallback?: () => void
   ) {
     let serverProtocol: "http" | "https" = "http";
     let serverHost = "localhost";
@@ -218,7 +219,7 @@ export class FullClient {
 
   public resetSignRequest() {
     this.signerIdentificationListeners = [];
-    this.resetSignRequestCallback(); // from outside - this.signRequest = new SignRequest();
+    this.resetSignRequestCallback?.(); // from outside - this.signRequest = new SignRequest();
   }
 
   public getSignatureIndex() {

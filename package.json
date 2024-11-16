@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsup src/index.ts src/demo.ts --minify --dts --format cjs,esm,iife --out-dir dist",
     "build:watch": "npm run build -- --watch",
+    "build:release": "NODE_ENV=production rm -r dist && npm run build -- --env.NODE_ENV production",
     "generate-autogram-api-types": "npx openapi-typescript http://localhost:37200/docs/server.yml --output src/autogram-api/lib/autogram-api.generated.ts && npx prettier --write src/autogram-api/lib/autogram-api.generated.ts",
     "generate-avm-api-types": "npx openapi-typescript https://autogram.slovensko.digital/openapi.yaml --output src/avm-api/lib/avm-api.generated.ts && npx jscodeshift -t src/avm-api/lib/avm-api.codemod.ts src/avm-api/lib/avm-api.generated.ts --extension=ts && npx prettier --write src/avm-api/lib/avm-api.generated.ts"
   },
@@ -33,10 +34,10 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
+    "@peculiar/webcrypto": "^1.5.0",
     "bwip-js": "^4.5.1",
     "cross-fetch": "^4.0.0",
     "crypto-browserify": "^3.12.0",
-    "isomorphic-webcrypto": "^2.3.8",
     "jose": "^5.9.6",
     "js-base64": "^3.7.7",
     "lit": "^3.1.2",

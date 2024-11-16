@@ -23,3 +23,4 @@ export {
 export { AutogramVMobileSimulation } from "./avm-api/lib/apiClient-mobile";
 
 export { FullClient } from "./main";
+export { AvmSimpleChannel } from "./channel";
