@@ -1,11 +1,11 @@
 {
   "name": "autogram-sdk",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "description": "SDK for Autogram signer  ",
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup src/index.ts src/demo.ts --minify --dts --format cjs,esm,iife --out-dir dist",
+    "build": "tsup src/index.ts src/demo.ts",
     "build:watch": "npm run build -- --watch",
     "build:release": "NODE_ENV=production rm -r dist && npm run build -- --env.NODE_ENV production",
     "generate-autogram-api-types": "npx openapi-typescript http://localhost:37200/docs/server.yml --output src/autogram-api/lib/autogram-api.generated.ts && npx prettier --write src/autogram-api/lib/autogram-api.generated.ts",
