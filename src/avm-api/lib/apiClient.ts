@@ -60,7 +60,10 @@ export class AutogramVMobileIntegration
     });
   }
 
-  public async getQrCodeUrl(doc: AvmIntegrationDocument) {
+  public async getQrCodeUrl(
+    doc: AvmIntegrationDocument,
+    enableIntegration = false
+  ) {
     if (!this.integrationGuid) {
       throw new Error("Integration guid missing");
     }
@@ -70,13 +73,17 @@ export class AutogramVMobileIntegration
       throw new Error("Document guid or key missing");
     }
 
-    const integration = await this.getIntegrationBearerToken(true);
-    console.log("Integration JWT", integration);
+    let integrationObj = {};
+    if (enableIntegration) {
+      const integration = await this.getIntegrationBearerToken(true);
+      console.log("Integration JWT", integration);
+      integrationObj = { integration: integration };
+    }
 
     return this.apiClient.qrCodeUrl({
       guid: doc.guid,
       key: doc.encryptionKey,
-      integration: integration,
+      ...integrationObj,
     });
   }
 

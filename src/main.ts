@@ -1,7 +1,5 @@
 import {
   AutogramVMobileIntegrationInterfaceStateful,
-  AvmSimpleChannel,
-  createUI,
   desktopApiClient,
   DesktopAutogramDocument,
   DesktopSignatureParameters,
@@ -11,11 +9,14 @@ import {
   SignatureParameters,
   UserCancelledSigningException,
 } from "./autogram-api/lib/apiClient";
-import { AutogramRoot, SigningMethod } from "./injected-ui";
+import { AvmSimpleChannel } from "./channel";
+import { AutogramRoot, createUI, SigningMethod } from "./injected-ui";
 import { Base64 } from "js-base64";
 
 export type SignedObject = DesktopSignResponseBody;
 
+
+console.log("FullClient");
 export class FullClient {
   private client: ReturnType<typeof desktopApiClient>;
   private clientMobileIntegration: AutogramVMobileIntegrationInterfaceStateful;

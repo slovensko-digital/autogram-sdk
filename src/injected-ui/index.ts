@@ -9,4 +9,4 @@ export function createUI(): AutogramRoot {
 }
 
 export { AutogramRoot };
-export { SigningMethod } from "./main";
+export { SigningMethod } from "./types";

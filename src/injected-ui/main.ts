@@ -5,16 +5,12 @@ import "./choice.screen";
 import "./sign-reader.screen";
 import "./sign-mobile.screen";
 import { EVENT_CLOSE, EVENT_SCREEN } from "./events";
+import { SigningMethod } from "./types";
 
 enum Screens {
   choice,
   signReader,
   signMobile,
-}
-
-export enum SigningMethod {
-  reader,
-  mobile,
 }
 
 @customElement("autogram-root")
@@ -70,12 +66,12 @@ export class AutogramRoot extends LitElement {
         ${this.screen === Screens.choice
           ? html`<autogram-choice-screen></autogram-choice-screen>`
           : this.screen === Screens.signReader
-            ? html`<autogram-sign-reader-screen></autogram-sign-reader-screen>`
-            : this.screen === Screens.signMobile
-              ? html`<autogram-sign-mobile-screen
-                  url=${this.qrCodeUrl}
-                ></autogram-sign-mobile-screen>`
-              : ""}
+          ? html`<autogram-sign-reader-screen></autogram-sign-reader-screen>`
+          : this.screen === Screens.signMobile
+          ? html`<autogram-sign-mobile-screen
+              url=${this.qrCodeUrl}
+            ></autogram-sign-mobile-screen>`
+          : ""}
       </div>
     `;
   }
@@ -160,7 +156,7 @@ export class AutogramRoot extends LitElement {
     });
   }
 
-  desktopSigning(abortController: AbortController){
+  desktopSigning(abortController: AbortController) {
     this.screen = Screens.signReader;
     this.abortController = abortController;
   }

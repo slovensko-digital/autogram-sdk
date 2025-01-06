@@ -7,6 +7,7 @@ import { AutogramBaseScreen } from "./base.screen";
 import { closeSvg } from "./svg";
 import { EVENT_SCREEN } from "./events";
 
+console.log("AutogramChoiceScreen");
 @customElement("autogram-choice-screen")
 export class AutogramChoiceScreen extends AutogramBaseScreen {
   render() {

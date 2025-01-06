@@ -1,5 +1,9 @@
 # Autogram SDK - use Autogram signer from web
 
+Autogram SDK is a TS/JS library that allows you to use the Autogram signer family (Autogram, Autogram V Mobile) from web. Not only does it provide an API to sign documents, but it also adds a UI for a consistent process of choosing the signer process (desktop/mobile).
+
+UI is implemented using lit-element and lit-html, so it's lightweight and easy to customize and thanks to shadow DOM, it's encapsulated and it won't interfere with your styles.
+
 ## Installation
 
 ```bash

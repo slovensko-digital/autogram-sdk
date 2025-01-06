@@ -1,4 +1,6 @@
-import { FullClient, AvmSimpleChannel } from ".";
+
+import { AvmSimpleChannel } from "./channel";
+import { FullClient } from "./ui";
 
 async function main() {
   const client = new FullClient(new AvmSimpleChannel(), () => {});

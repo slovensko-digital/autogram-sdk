@@ -2,7 +2,7 @@
     "compilerOptions": {
       "jsx": "react",
       "outDir": "./dist/",
-      "moduleResolution": "node",
+      "moduleResolution": "bundler",
       // "noImplicitAny": false,
       "allowSyntheticDefaultImports": true,
       "esModuleInterop": true,

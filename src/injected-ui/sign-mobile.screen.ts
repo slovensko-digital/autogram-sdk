@@ -5,7 +5,7 @@ import { closeSvg } from "./svg";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { AutogramBaseScreen } from "./base.screen";
 
-import bwipjs from "bwip-js";
+import { toSVG as bwipToSvg } from "@bwip-js/generic";
 
 enum Steps {
   showQRCode,
@@ -24,12 +24,12 @@ export class AutogramSignMobileScreen extends AutogramBaseScreen {
     return this.step === Steps.showQRCode
       ? this.renderQR()
       : this.step === Steps.noitifyMobile
-        ? this.renderNotifyMobile()
-        : html``;
+      ? this.renderNotifyMobile()
+      : html``;
   }
 
   renderQR() {
-    const qrCode = bwipjs.toSVG({
+    const qrCode = bwipToSvg({
       bcid: "qrcode", // Barcode type
       text: this.url, // Text to encode
       scale: 6, // 3x scaling factor
@@ -47,16 +47,29 @@ export class AutogramSignMobileScreen extends AutogramBaseScreen {
       <div class="main">
         <div class="cols">
           <div class="col">
-          <p>Dokumenty nachádzajúce sa vo vašom počítači, či v informačnom systéme môžete podpisovať aj mobilom. Potrebujete na to aplikáciu <a href="https://sluzby.slovensko.digital/autogram-v-mobile/?utm_source=extension&utm_medium=web&utm_campaign=avm" target="_blank" rel="noopener">Autogram v mobile</a>.</p>
-          <ol>
-            <li>Naskenujte QR kód mobilom.</li>
-            <li>Podpíšte dokument mobilom pomocou aplikácie Autogram v mobile.</li>
-            <li>Pokračujte v práci s podpísaným dokumentom na tomto počítači.</li>
-          </ol>
+            <p>
+              Dokumenty nachádzajúce sa vo vašom počítači, či v informačnom
+              systéme môžete podpisovať aj mobilom. Potrebujete na to aplikáciu
+              <a
+                href="https://sluzby.slovensko.digital/autogram-v-mobile/?utm_source=extension&utm_medium=web&utm_campaign=avm"
+                target="_blank"
+                rel="noopener"
+                >Autogram v mobile</a
+              >.
+            </p>
+            <ol>
+              <li>Naskenujte QR kód mobilom.</li>
+              <li>
+                Podpíšte dokument mobilom pomocou aplikácie Autogram v mobile.
+              </li>
+              <li>
+                Pokračujte v práci s podpísaným dokumentom na tomto počítači.
+              </li>
+            </ol>
           </div>
           <div class="col">
             <figure style="width: 200px; height: 200px;">
-            ${unsafeSVG(qrCode)}
+              ${unsafeSVG(qrCode)}
             </figure>
           </div>
         </div>

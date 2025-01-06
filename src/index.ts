@@ -1,9 +1,4 @@
 export {
-  createUI,
-  AutogramRoot as UIAutogramRoot,
-  SigningMethod as UISigningMethod,
-} from "./injected-ui/index";
-export {
   apiClient as desktopApiClient,
   SignatureParameters as DesktopSignatureParameters,
   AutogramDocument as DesktopAutogramDocument,
@@ -21,6 +16,3 @@ export {
 } from "./avm-api/lib/apiClient";
 
 export { AutogramVMobileSimulation } from "./avm-api/lib/apiClient-mobile";
-
-export { FullClient } from "./main";
-export { AvmSimpleChannel } from "./channel";
