@@ -1,9 +1,8 @@
-
 import { AvmSimpleChannel } from "./channel";
-import { FullClient } from "./ui";
+import { CombinedClient } from "./with-ui";
 
 async function main() {
-  const client = new FullClient(new AvmSimpleChannel(), () => {});
+  const client = await CombinedClient.init(new AvmSimpleChannel(), () => {});
   const filePicker = document.createElement("input");
   filePicker.type = "file";
   filePicker.addEventListener("change", async (e) => {

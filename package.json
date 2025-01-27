@@ -1,18 +1,29 @@
 {
   "name": "autogram-sdk",
-  "version": "0.0.2",
-  "description": "SDK for Autogram signer  ",
+  "version": "0.0.3",
+  "description": "SDK for Autogram signer",
   "main": "dist/index.js",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     },
-    "./ui": {
-      "import": "./dist/ui.mjs",
-      "require": "./dist/ui.js",
-      "types": "./dist/ui.d.ts"
+    "./with-ui": {
+      "types": "./dist/with-ui.d.ts",
+      "import": "./dist/with-ui.mjs",
+      "require": "./dist/with-ui.js",
+      "default": "./dist/with-ui.mjs"
+    },
+    "./autogram-api": {
+      "types": "./dist/autogram-api/index.d.ts",
+      "import": "./dist/autogram-api/index.mjs",
+      "require": "./dist/autogram-api/index.js"
+    },
+    "./avm-api": {
+      "types": "./dist/avm-api/index.d.ts",
+      "import": "./dist/avm-api/index.mjs",
+      "require": "./dist/avm-api/index.js"
     }
   },
   "scripts": {
@@ -21,7 +32,8 @@
     "build:watch": "npm run build -- --watch",
     "build:release": "NODE_ENV=production rm -r dist && npm run build -- --env.NODE_ENV production",
     "generate-autogram-api-types": "npx openapi-typescript http://localhost:37200/docs/server.yml --output src/autogram-api/lib/autogram-api.generated.ts && npx prettier --write src/autogram-api/lib/autogram-api.generated.ts",
-    "generate-avm-api-types": "npx openapi-typescript https://autogram.slovensko.digital/openapi.yaml --output src/avm-api/lib/avm-api.generated.ts && npx jscodeshift -t src/avm-api/lib/avm-api.codemod.ts src/avm-api/lib/avm-api.generated.ts --extension=ts && npx prettier --write src/avm-api/lib/avm-api.generated.ts"
+    "generate-avm-api-types": "npx openapi-typescript https://autogram.slovensko.digital/openapi.yaml --output src/avm-api/lib/avm-api.generated.ts && npx jscodeshift -t src/avm-api/lib/avm-api.codemod.ts src/avm-api/lib/avm-api.generated.ts --extension=ts && npx prettier --write src/avm-api/lib/avm-api.generated.ts",
+    "demo": "npx http-server -c-1 -p 8080 -a 127.0.0.1 ."
   },
   "repository": {
     "type": "git",
@@ -58,6 +70,8 @@
     "js-base64": "^3.7.7",
     "lit": "^3.1.2",
     "stream-browserify": "^3.0.0",
+    "typedoc": "^0.27.6",
+    "typedoc-plugin-markdown": "^4.4.1",
     "vm-browserify": "^1.1.2",
     "zod": "^3.23.8"
   }

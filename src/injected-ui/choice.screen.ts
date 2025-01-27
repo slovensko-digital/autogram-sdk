@@ -1,4 +1,4 @@
-import { html } from "lit";
+import { html } from "lit/html.js";
 import { customElement } from "lit/decorators.js";
 import { computerSvg, mobileSvg } from "./svg";
 
@@ -7,7 +7,7 @@ import { AutogramBaseScreen } from "./base.screen";
 import { closeSvg } from "./svg";
 import { EVENT_SCREEN } from "./events";
 
-console.log("AutogramChoiceScreen");
+console.log("AutogramChoiceScreen", customElements.get("autogram-choice-screen"));
 @customElement("autogram-choice-screen")
 export class AutogramChoiceScreen extends AutogramBaseScreen {
   render() {

@@ -499,6 +499,9 @@ export const GetDocumentsResponse = z.object({
 
 // Types
 
+/**
+ * Interface for a key-value store used for persisting integration's state
+ */
 export interface DBInterface {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   set: (key: IDBValidKey, value: any) => Promise<void>;

@@ -7,7 +7,15 @@ export default defineConfig({
   sourcemap: true,
   format: ["cjs", "esm", "iife"],
   outDir: "dist",
-  entry: ["src/index.ts", "src/demo.ts", "src/types.ts", "src/ui.ts"],
+  entry: [
+    "src/index-all.ts",
+    "src/index.ts",
+    "src/demo.ts",
+    "src/types.ts",
+    "src/with-ui.ts",
+    "src/autogram-api/index.ts",
+    "src/avm-api/index.ts",
+  ],
   noExternal: ["@bwip-js/generic"],
   esbuildOptions(options, context) {
     options.loader = {

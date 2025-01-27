@@ -5,4 +5,5 @@ export {
   SignatureParameters,
   SignResponseBody,
   apiClient,
+  UserCancelledSigningException,
 } from "./lib/apiClient";

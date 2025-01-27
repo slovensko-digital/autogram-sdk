@@ -22,3 +22,4 @@ export {
   AvmIntegrationDocument as AVMIntegrationDocument,
 } from "./avm-api/index";
 export { AutogramVMobileSimulation } from "./avm-api/index";
+export { CombinedClient, SignedObject } from "./with-ui";

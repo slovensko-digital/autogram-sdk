@@ -9,10 +9,22 @@
     <h1>Welcome to Autogram SDK</h1>
     <p>This is a basic HTML template.</p>
     <!-- <script src="dist/demo.global.js" type="module"></script> -->
-    <script src="dist/index.global.js"></script>
+    <script src="dist/index-all.global.js"></script>
     <script>
       async function main() {
-        const client = new AutogramSDK.FullClient();
+        const client = await AutogramSDK.CombinedClient.init();
+        client.sign(
+          {
+            content: "Hello, World!",
+            filename: "hello.txt",
+          },
+          {
+            level: "XAdES_BASELINE_B",
+            container: "ASiC_E",
+          },
+          "text/plain",
+          true
+        );
         const filePicker = document.createElement("input");
         filePicker.type = "file";
         filePicker.addEventListener("change", async (e) => {

@@ -13,9 +13,9 @@ npm install autogram-sdk
 ## Usage
 
 ```typescript
-import { FullClient } from ".";
+import { CombinedClient } from ".";
 
-const client = new FullClient();
+const client = await CombinedClient.init();
 
 const { content, issuedBy, signedBy } = await client.sign(
   {
@@ -36,7 +36,7 @@ const { content, issuedBy, signedBy } = await client.sign(
 ```html
 <script src="dist/index.global.js"></script>
 <script>
-  const client = new AutogramSDK.FullClient();
+  const client = await AutogramSDK.CombinedClient.init();
 
   const { content, issuedBy, signedBy } = await client.sign(
     {

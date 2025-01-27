@@ -1,0 +1,12 @@
+{
+  "entryPoints": [
+    "src/index.ts",
+    "src/demo.ts",
+    "src/types.ts",
+    "src/with-ui.ts",
+    "src/autogram-api/index.ts",
+    "src/avm-api/index.ts"
+  ],
+  "exclude": ["**/node_modules/**/*", "**/*.test.ts", "**/*.codemod.ts"]
+  //   "plugin": ["typedoc-plugin-markdown"]
+}

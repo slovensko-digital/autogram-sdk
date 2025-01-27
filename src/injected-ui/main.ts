@@ -83,6 +83,7 @@ export class AutogramRoot extends LitElement {
   };
 
   connectedCallback(): void {
+    console.log("connectedCallback");
     super.connectedCallback();
     this.addFonts();
 
@@ -103,12 +104,14 @@ export class AutogramRoot extends LitElement {
   }
 
   disconnectedCallback(): void {
+    console.log("disconnectedCallback");
     super.disconnectedCallback();
     // remove event listeners?
     this.shadowRoot?.removeEventListener(EVENT_CLOSE, this.closeEventHander);
   }
 
-  async startSigning() {
+  public async startSigning() {
+    console.log("startSigning");
     this.screen = Screens.choice;
     this.show();
     return new Promise<SigningMethod>((resolve, reject) => {

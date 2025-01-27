@@ -2,6 +2,11 @@ import { components, paths } from "./avm-api.generated";
 import fetch from "cross-fetch";
 import z from "zod";
 
+/**
+ * ???
+ * Probably used for testing(?)
+ * @category Autogram V Mobile
+ */
 export class AutogramVMobileSimulation {
   apiClient: AutogramVMobileClientApiClient;
   guid: string;

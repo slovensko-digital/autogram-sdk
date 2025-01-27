@@ -1,23 +1,34 @@
+/**
+ * @module with-ui
+ * This module is special because it usees custom elements
+ * and when you try registering them outside of content script you will get an error
+ */
+
 import {
-  AutogramVMobileIntegrationInterfaceStateful,
-  desktopApiClient,
-  DesktopAutogramDocument,
-  DesktopSignatureParameters,
-  DesktopSignResponseBody,
-} from ".";
-import {
+  apiClient as desktopApiClient,
+  SignatureParameters as DesktopSignatureParameters,
+  AutogramDocument as DesktopAutogramDocument,
+  SignResponseBody as DesktopSignResponseBody,
   SignatureParameters,
   UserCancelledSigningException,
-} from "./autogram-api/lib/apiClient";
+} from "./autogram-api/index";
+
+import { AutogramVMobileIntegrationInterfaceStateful } from "./avm-api/index";
 import { AvmSimpleChannel } from "./channel";
-import { AutogramRoot, createUI, SigningMethod } from "./injected-ui";
 import { Base64 } from "js-base64";
+import { AutogramRoot } from "./injected-ui/main";
+import { SigningMethod } from "./injected-ui/types";
 
 export type SignedObject = DesktopSignResponseBody;
+// We have to leave this in because otherwise the custom elements are not registered
+export { AutogramRoot } from "./injected-ui/main";
 
+console.log("CombinedClient");
 
-console.log("FullClient");
-export class FullClient {
+/**
+ * CombinedClient combines desktop and mobile signing methods with UI to choose between them
+ */
+export class CombinedClient {
   private client: ReturnType<typeof desktopApiClient>;
   private clientMobileIntegration: AutogramVMobileIntegrationInterfaceStateful;
   private ui: AutogramRoot;
@@ -25,7 +36,12 @@ export class FullClient {
   private signerIdentificationListeners: (() => void)[];
   private resetSignRequestCallback?: () => void;
 
-  public constructor(
+  /**
+   * @param avmChannel - Autogram V Mobile Integration channel
+   * @param resetSignRequestCallback - Callback to reset sign request
+   */
+  private constructor(
+    ui: AutogramRoot,
     avmChannel: AutogramVMobileIntegrationInterfaceStateful = new AvmSimpleChannel(),
     resetSignRequestCallback?: () => void
   ) {
@@ -38,7 +54,7 @@ export class FullClient {
       serverHost = "loopback.autogram.slovensko.digital";
     }
 
-    this.ui = createUI();
+    this.ui = ui;
 
     this.client = desktopApiClient({
       serverProtocol,
@@ -53,6 +69,69 @@ export class FullClient {
     this.resetSignRequestCallback = resetSignRequestCallback;
 
     this.resetSignRequest();
+
+    console.log("CombinedClient constructor end");
+  }
+
+  /**
+   * We have to use async factory function because we have to wait for the UI to be created
+   *
+   */
+  public static async init(
+    avmChannel: AutogramVMobileIntegrationInterfaceStateful = new AvmSimpleChannel(),
+    resetSignRequestCallback?: () => void
+  ): Promise<CombinedClient> {
+    console.log("CombinedClient init");
+    async function createUI(): Promise<AutogramRoot> {
+      const root: AutogramRoot = document.createElement(
+        "autogram-root"
+      ) as unknown as AutogramRoot;
+      document.body.appendChild(root);
+
+      await new Promise<void>((resolve, reject) => {
+        try {
+          console.log("CombinedClient init addEventListener");
+          const resolved = false;
+          const listener = root.addEventListener(
+            "load",
+            () => {
+              console.log("CombinedClient init load event");
+              if (!resolved) {
+                resolve();
+              }
+            },
+            { once: true }
+          );
+          if (root.isConnected) {
+            console.log("CombinedClient init already connected", { root });
+            resolve();
+          }
+        } catch (e) {
+          console.error(e);
+          reject(e);
+        }
+      });
+
+      console.log({ root: root, ss: root.startSigning });
+
+      return root as AutogramRoot;
+    }
+
+    console.log("CombinedClient init createUI");
+    const ui = await createUI();
+
+    console.log("CombinedClient init new CombinedClient");
+    return new CombinedClient(ui, avmChannel, resetSignRequestCallback);
+  }
+
+  public setResetSignRequestCallback(callback: () => void) {
+    if (this.resetSignRequestCallback !== undefined) {
+      console.warn("resetSignRequestCallback already set");
+    }
+    if (typeof callback !== "function") {
+      throw new Error("callback is not a function");
+    }
+    this.resetSignRequestCallback = callback;
   }
 
   private async _sign(
@@ -60,6 +139,7 @@ export class FullClient {
     signatureParameters: SignatureParameters,
     payloadMimeType: string
   ) {
+    console.log("sign", this.ui);
     const signingMethod = await this.ui.startSigning();
     if (signingMethod === SigningMethod.reader) {
       const abortController = new AbortController();
@@ -81,6 +161,15 @@ export class FullClient {
       throw new Error("Invalid signing method");
     }
   }
+
+  /**
+   *
+   * @param document document to sign
+   * @param signatureParameters how to sign the document
+   * @param payloadMimeType mime type of the input document
+   * @param decodeBase64 if false the content will be (stay) base64 encoded, if true we will decode it
+   * @returns
+   */
   public async sign(
     document: DesktopAutogramDocument,
     signatureParameters: SignatureParameters,
@@ -218,16 +307,27 @@ export class FullClient {
     }
   }
 
+  /**
+   * reset sign request, so callbacks and signature index are reset
+   */
   public resetSignRequest() {
     this.signerIdentificationListeners = [];
     this.resetSignRequestCallback?.(); // from outside - this.signRequest = new SignRequest();
   }
 
+  /**
+   *
+   * @returns signature index (incremented after each signature)
+   */
   public getSignatureIndex() {
     return this.signatureIndex;
   }
 }
 
+/**
+ *
+ * @returns true if the browser is Safari (heuristic based on navigator.userAgent)
+ */
 export function isSafari(): boolean {
   return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 }
