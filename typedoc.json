@@ -5,11 +5,11 @@
       "path": "docs/html",
       "format": "html"
     },
-    {
-      "name": "uml",
-      "path": "docs/uml",
-      "format": "png"
-    }
+    // {
+    //   "name": "uml",
+    //   "path": "docs/uml",
+    //   "format": "png"
+    // }
   ],
   "entryPoints": [
     "src/index.ts",
