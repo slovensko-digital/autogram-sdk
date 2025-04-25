@@ -5,42 +5,81 @@
 
 export interface paths {
   "/info": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     /** Retrieve info and the current server status */
     get: operations["getInfo"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/sign": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
     /**
      * Sign a single document or single document in batch
      * @description Sign a single document or single document in batch.
      *
-     * If the `batchId` is provided, the document is signed inside the batch.
+     *     If the `batchId` is provided, the document is signed inside the batch.
      *
-     * If the `batchId` is not provided, the document is signed as a standalone document.
+     *     If the `batchId` is not provided, the document is signed as a standalone document.
+     *
      */
     post: operations["signDocument"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
   "/batch": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
     /**
      * Start a batch session
      * @description Start a batch session, `batchId` is returned.
      *
-     * Batch session is used to sign multiple documents with the same signature.
-     * The batch session is identified and authorized by the `batchId`, keep it secret.
+     *     Batch session is used to sign multiple documents with the same signature.
+     *     The batch session is identified and authorized by the `batchId`, keep it secret.
      *
-     * After getting the `batchId`, you can sign documents in batch by adding `batchId` property to `POST /sign` [sign](#/{Batch}/{signDocument}) request body.
-     * When you are done signing documents, you can end the batch session using `DELETE /batch`.
+     *     After getting the `batchId`, you can sign documents in batch by adding `batchId` property to `POST /sign` [sign](#/{Batch}/{signDocument}) request body.
+     *     When you are done signing documents, you can end the batch session using `DELETE /batch`.
+     *
      */
     post: operations["startBatch"];
     /**
      * End a batch session
      * @description End a batch session, either prematurely or after all documents have been signed. Returns status of batch session - if number of signed documents is equal to total number of documents in batch, the status is `FINISHED`, otherwise `NOT_FINISHED`.
+     *
      */
     delete: operations["endBatch"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
   };
 }
-
 export type webhooks = Record<string, never>;
-
 export interface components {
   schemas: {
     Info: {
@@ -52,18 +91,18 @@ export interface components {
     SignRequestBody: {
       /**
        * @description Optional identifier of the batch.
-       * If not provided, document will be signed as single standalone document.
-       * If provided, document will be signed inside batch.
+       *     If not provided, document will be signed as single standalone document.
+       *     If provided, document will be signed inside batch.
        *
        * @example 0c62536c-f43f-4302-b8f0-e2ad521c8175
        */
       batchId?: string;
       document: components["schemas"]["Document"];
-      parameters: components["schemas"]["SignatureParameters"];
+      parameters?: components["schemas"]["SignatureParameters"];
       /**
        * @description MIME type for document content and signature parameters like transformation and schema.
-       * Binary files should be encoded using base64, e.g., `application/pdf;base64`.
-       * Text formats like XML can be optionally encoded using base64 but can be supplied as plain text as seen in the examples, in which case the type is `application/xml`.
+       *     Binary files should be encoded using base64, e.g., `application/pdf;base64`.
+       *     Text formats like XML can be optionally encoded using base64 but can be supplied as plain text as seen in the examples, in which case the type is `application/xml`.
        *
        * @example application/xml
        */
@@ -71,7 +110,7 @@ export interface components {
     };
     Document: {
       /**
-       * @description Filename of the original file to be signed. Is used to name the file inside ASiC container. If not provided with ASiC container, the file is named `detached-file` inside the container.
+       * @description Filename of the original file to be signed. Is used to name the file inside ASiC container. If not provided with ASiC container, the file is named `detached-file` inside the container. If XML Document container is created, filename extension is set to `.xdcf` or filename is set to `document.xdcf` if empty.
        * @example document.xml
        */
       filename?: string;
@@ -136,10 +175,13 @@ export interface components {
       autoLoadEform?: boolean;
       /**
        * @description Signature format PAdES is usable only with documents of type `application/pdf`. Format XAdES is usable with XML or with any file type if using an ASiC container.
+       *
+       *     If document is already signed (PAdES PDF or ASiC), this parameter is optional and signature level is decided based on the already signed document if empty.
+       *
        * @example XAdES_BASELINE_B
        * @enum {string}
        */
-      level: "XAdES_BASELINE_B" | "PAdES_BASELINE_B" | "CAdES_BASELINE_B";
+      level?: "XAdES_BASELINE_B" | "PAdES_BASELINE_B" | "CAdES_BASELINE_B";
       /**
        * @description Optional container type that should be used to place the file with signature to. Defaults to null. Is ignored with autoLoadEform true.
        * @example ASiC_E
@@ -257,6 +299,12 @@ export interface components {
        * @enum {string}
        */
       visualizationWidth?: "sm" | "md" | "lg" | "xl" | "xxl";
+      /**
+       * @description Specific identifier for financnasprava.sk EForms. For example, 792_772 is an identifier of "Danove priznanie - riadne".
+       * @default null
+       * @example 792_772
+       */
+      fsFormId?: string;
     };
   };
   responses: never;
@@ -265,30 +313,35 @@ export interface components {
   headers: never;
   pathItems: never;
 }
-
-export type external = Record<string, never>;
-
+export type $defs = Record<string, never>;
 export interface operations {
-  /** Retrieve info and the current server status */
   getInfo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
     responses: {
       /** @description successful operation */
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["Info"];
         };
       };
     };
   };
-  /**
-   * Sign a single document or single document in batch
-   * @description Sign a single document or single document in batch.
-   *
-   * If the `batchId` is provided, the document is signed inside the batch.
-   *
-   * If the `batchId` is not provided, the document is signed as a standalone document.
-   */
   signDocument: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["SignRequestBody"];
@@ -297,14 +350,25 @@ export interface operations {
     responses: {
       /** @description The document was successfully signed and its content is available in the response body. */
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["SignResponseBody"];
         };
       };
       /** @description The document was not signed because the user cancelled the signing process. */
-      204: never;
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description The request body cannot be processed. */
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": {
             /**
@@ -336,6 +400,9 @@ export interface operations {
       };
       /** @description Batch with the given `batchId` was not found or the batch session has ended. */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": {
             /**
@@ -359,6 +426,9 @@ export interface operations {
       };
       /** @description The request body is valid but the document cannot be signed. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": {
             /**
@@ -382,6 +452,9 @@ export interface operations {
       };
       /** @description Request failed due to some unexpected error. */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": {
             /**
@@ -404,6 +477,9 @@ export interface operations {
       };
       /** @description Request failed due to an error with the signing process. */
       502: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": {
             /**
@@ -427,17 +503,13 @@ export interface operations {
       };
     };
   };
-  /**
-   * Start a batch session
-   * @description Start a batch session, `batchId` is returned.
-   *
-   * Batch session is used to sign multiple documents with the same signature.
-   * The batch session is identified and authorized by the `batchId`, keep it secret.
-   *
-   * After getting the `batchId`, you can sign documents in batch by adding `batchId` property to `POST /sign` [sign](#/{Batch}/{signDocument}) request body.
-   * When you are done signing documents, you can end the batch session using `DELETE /batch`.
-   */
   startBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody?: {
       content: {
         "application/json": components["schemas"]["BatchStartRequestBody"];
@@ -446,17 +518,22 @@ export interface operations {
     responses: {
       /** @description successful operation */
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["BatchStartResponseBody"];
         };
       };
     };
   };
-  /**
-   * End a batch session
-   * @description End a batch session, either prematurely or after all documents have been signed. Returns status of batch session - if number of signed documents is equal to total number of documents in batch, the status is `FINISHED`, otherwise `NOT_FINISHED`.
-   */
   endBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody?: {
       content: {
         "application/json": components["schemas"]["BatchEndRequestBody"];
@@ -465,6 +542,9 @@ export interface operations {
     responses: {
       /** @description successful operation */
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["BatchEndResponseBody"];
         };

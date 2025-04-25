@@ -1,6 +1,7 @@
 import { components, paths } from "./avm-api.generated";
 import fetch from "cross-fetch";
 import z from "zod";
+import { createLogger } from "../../log";
 
 /**
  * ???
@@ -11,6 +12,7 @@ export class AutogramVMobileSimulation {
   apiClient: AutogramVMobileClientApiClient;
   guid: string;
   encryptionKey: string;
+  log = createLogger("ag-sdk:AutogramVMobileSimulation");
 
   constructor() {
     this.apiClient = new AutogramVMobileClientApiClient();
@@ -22,7 +24,7 @@ export class AutogramVMobileSimulation {
     const encryptionKey = url.searchParams.get("key");
     const integrationJwt = url.searchParams.get("integration");
 
-    console.log({ guid, key: encryptionKey, integrationJwt });
+    this.log.debug({ guid, key: encryptionKey, integrationJwt });
     if (!guid || !encryptionKey) {
       throw new Error("Invalid URL");
     }
@@ -31,12 +33,12 @@ export class AutogramVMobileSimulation {
   }
 
   visualizeDocument() {
-    console.log("Document visualized", this.guid, this.encryptionKey);
+    this.log.debug("Document visualized", this.guid, this.encryptionKey);
 
     return this.apiClient
       .getDocumentVisualization({ guid: this.guid }, this.encryptionKey)
       .then((res) => {
-        console.log("Document visualization", res);
+        this.log.debug("Document visualization", res);
         return res;
       });
   }
@@ -47,7 +49,7 @@ export class AutogramVMobileSimulation {
         { guid: this.guid },
         this.encryptionKey
       );
-    console.log("Signature parameters", signatureParameters);
+    this.log.debug("Signature parameters", signatureParameters);
 
     // const dataToSign = {
     //   dataToSign: signatureParameters.dataToSign,
@@ -62,6 +64,8 @@ export class AutogramVMobileSimulation {
  */
 export class AutogramVMobileClientApiClient {
   baseUrl: string;
+  log = createLogger("ag-sdk:AutogramVMobileClientApiClient");
+
   constructor() {
     this.baseUrl = "https://autogram.slovensko.digital/api/v1";
   }

@@ -6,8 +6,11 @@ import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { AutogramBaseScreen } from "./base.screen";
 import { closeSvg } from "./svg";
 import { EVENT_SCREEN } from "./events";
+import { createLogger } from "../log";
 
-console.log("AutogramChoiceScreen", customElements.get("autogram-choice-screen"));
+const log = createLogger("ag-sdk:AutogramChoiceScreen");
+
+log.debug("AutogramChoiceScreen", customElements.get("autogram-choice-screen"));
 @customElement("autogram-choice-screen")
 export class AutogramChoiceScreen extends AutogramBaseScreen {
   render() {
@@ -40,7 +43,7 @@ export class AutogramChoiceScreen extends AutogramBaseScreen {
   }
 
   signUsingReader() {
-    console.log("signUsingReader");
+    log.debug("signUsingReader");
     this.dispatchEvent(
       new CustomEvent(EVENT_SCREEN.SIGN_READER, {
         bubbles: true,
@@ -50,7 +53,7 @@ export class AutogramChoiceScreen extends AutogramBaseScreen {
   }
 
   signUsingMobile() {
-    console.log("signUsingMobile");
+    log.debug("signUsingMobile");
     this.dispatchEvent(
       new CustomEvent(EVENT_SCREEN.SIGN_MOBILE, {
         bubbles: true,

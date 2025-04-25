@@ -1,8 +1,13 @@
-import { AvmSimpleChannel } from "./channel";
+import { AvmSimpleChannel } from "./channel-avm";
+import { AutogramDesktopSimpleChannel } from "./channel-desktop";
 import { CombinedClient } from "./with-ui";
 
 async function main() {
-  const client = await CombinedClient.init(new AvmSimpleChannel(), () => {});
+  const client = await CombinedClient.init(
+    new AvmSimpleChannel(),
+    new AutogramDesktopSimpleChannel(),
+    () => {}
+  );
   const filePicker = document.createElement("input");
   filePicker.type = "file";
   filePicker.addEventListener("change", async (e) => {

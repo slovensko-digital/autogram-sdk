@@ -6,4 +6,5 @@ export {
   SignResponseBody,
   apiClient,
   UserCancelledSigningException,
+  AutogramDesktopIntegrationInterface,
 } from "./lib/apiClient";

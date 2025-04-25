@@ -11,7 +11,6 @@ export default defineConfig({
     "src/index-all.ts",
     "src/index.ts",
     "src/demo.ts",
-    "src/types.ts",
     "src/with-ui.ts",
     "src/autogram-api/index.ts",
     "src/avm-api/index.ts",

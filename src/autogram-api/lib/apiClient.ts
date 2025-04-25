@@ -98,7 +98,7 @@ export function apiClient(options?: ApiClientConfiguration) {
         }
       }
 
-      return `${configuration.customProtocol}://${command}?${params}`;
+      return Promise.resolve(`${configuration.customProtocol}://${command}?${params}`);
     },
 
     /**
@@ -172,13 +172,10 @@ export function apiClient(options?: ApiClientConfiguration) {
         // _eslint-disable-next-line functional/no-loop-statement
         while (!finished) {
           requestAbortController = new AbortController();
-          const requestTimeout = setTimeout(
-            () => {
-              if (!requestAbortController.signal.aborted)
-                requestAbortController.abort();
-            },
-            (delay + 1) * 1000
-          );
+          const requestTimeout = setTimeout(() => {
+            if (!requestAbortController.signal.aborted)
+              requestAbortController.abort();
+          }, (delay + 1) * 1000);
 
           try {
             lastResponse = await (
@@ -229,7 +226,8 @@ export function apiClient(options?: ApiClientConfiguration) {
         level: "XAdES_BASELINE_B",
         checkPDFACompliance: true,
       },
-      payloadMimeType = "application/xml"
+      payloadMimeType = "application/xml",
+      abortController: AbortController | null = null
     ): Promise<SignResponseBody> {
       const url = new URL("sign", serverUrl);
 
@@ -245,6 +243,7 @@ export function apiClient(options?: ApiClientConfiguration) {
         headers: { "Content-Type": "text/plain" },
         cache: "no-store",
         body: JSON.stringify(body),
+        ...(abortController ? { signal: abortController.signal } : {}),
       } as const;
 
       return fetch(url.toString(), init).then((response) => {
@@ -256,6 +255,8 @@ export function apiClient(options?: ApiClientConfiguration) {
     },
   };
 }
+
+export type AutogramDesktopIntegrationInterface = ReturnType<typeof apiClient>;
 
 /**
  * Client configuration options.

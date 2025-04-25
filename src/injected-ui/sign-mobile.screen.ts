@@ -6,6 +6,9 @@ import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { AutogramBaseScreen } from "./base.screen";
 
 import { toSVG as bwipToSvg } from "@bwip-js/generic";
+import { createLogger } from "../log";
+
+const log = createLogger("ag-sdk:AutogramSignMobileScreen");
 
 enum Steps {
   showQRCode,
@@ -20,7 +23,7 @@ export class AutogramSignMobileScreen extends AutogramBaseScreen {
   url: string;
 
   render() {
-    console.log(this.url);
+    log.debug(this.url);
     return this.step === Steps.showQRCode
       ? this.renderQR()
       : this.step === Steps.noitifyMobile

@@ -4,10 +4,12 @@
 
 /* Autogram Desktop */
 export {
+  AutogramDesktopIntegrationInterface,
   apiClient as desktopApiClient,
   SignatureParameters as DesktopSignatureParameters,
   AutogramDocument as DesktopAutogramDocument,
   SignResponseBody as DesktopSignResponseBody,
+  ServerInfo as DesktopServerInfo,
 } from "./autogram-api/index";
 export { UserCancelledSigningException as DesktopUserCancelledSigningException } from "./autogram-api/lib/apiClient";
 
@@ -22,3 +24,5 @@ export {
   AvmIntegrationDocument as AVMIntegrationDocument,
 } from "./avm-api/index";
 export { AutogramVMobileSimulation } from "./avm-api/index";
+
+export { UserCancelledSigningException as AVMUserCancelledSigningException } from "./errors";

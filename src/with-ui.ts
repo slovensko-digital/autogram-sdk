@@ -10,67 +10,61 @@ import {
   AutogramDocument as DesktopAutogramDocument,
   SignResponseBody as DesktopSignResponseBody,
   SignatureParameters,
-  UserCancelledSigningException,
+  UserCancelledSigningException as DesktopUserCancelledSigningException,
 } from "./autogram-api/index";
 
 import { AutogramVMobileIntegrationInterfaceStateful } from "./avm-api/index";
-import { AvmSimpleChannel } from "./channel";
+import { AvmSimpleChannel } from "./channel-avm";
 import { Base64 } from "js-base64";
 import { AutogramRoot } from "./injected-ui/main";
 import { SigningMethod } from "./injected-ui/types";
+import { AutogramDesktopIntegrationInterface } from "./autogram-api/lib/apiClient";
+import { AutogramDesktopSimpleChannel } from "./channel-desktop";
+import { createLogger } from "./log";
+import { UserCancelledSigningException } from "./errors";
+
 
 export type SignedObject = DesktopSignResponseBody;
 // We have to leave this in because otherwise the custom elements are not registered
 export { AutogramRoot } from "./injected-ui/main";
 
-console.log("CombinedClient");
+const log = createLogger("ag-sdk.CombinedClient");
 
 /**
  * CombinedClient combines desktop and mobile signing methods with UI to choose between them
+ *
+ * @class CombinedClient
+ * @module with-ui
+ * @param avmChannel - implementing Autogram V Mobile interface. It can be used to bind SDK to service worker.
+ * @param desktopChannel - implementing Autogram Desktop interface. It can be used to bind SDK to service worker.
+ * @param resetSignRequestCallback - Callback to reset sign request
  */
 export class CombinedClient {
-  private client: ReturnType<typeof desktopApiClient>;
-  private clientMobileIntegration: AutogramVMobileIntegrationInterfaceStateful;
-  private ui: AutogramRoot;
   private signatureIndex = 1;
   private signerIdentificationListeners: (() => void)[];
-  private resetSignRequestCallback?: () => void;
 
   /**
    * @param avmChannel - Autogram V Mobile Integration channel
    * @param resetSignRequestCallback - Callback to reset sign request
    */
   private constructor(
-    ui: AutogramRoot,
-    avmChannel: AutogramVMobileIntegrationInterfaceStateful = new AvmSimpleChannel(),
-    resetSignRequestCallback?: () => void
+    private ui: AutogramRoot,
+    private clientMobileIntegration: AutogramVMobileIntegrationInterfaceStateful = new AvmSimpleChannel(),
+    private clientDesktopIntegration: AutogramDesktopIntegrationInterface = new AutogramDesktopSimpleChannel(),
+    private resetSignRequestCallback?: () => void,
   ) {
-    let serverProtocol: "http" | "https" = "http";
-    let serverHost = "localhost";
+    // this.ui = ui;
 
-    if (isSafari()) {
-      // Quick hack - mozno je lepsie urobit to ako fallback ak nefunguje http
-      serverProtocol = "https";
-      serverHost = "loopback.autogram.slovensko.digital";
-    }
+    // this.clientDesktopIntegration = clientDesktopIntegration;
 
-    this.ui = ui;
-
-    this.client = desktopApiClient({
-      serverProtocol,
-      serverHost,
-      disableSecurity: true,
-      requestsOrigin: "*",
-    });
-
-    this.clientMobileIntegration = avmChannel;
+    // this.clientMobileIntegration = avmChannel;
     this.clientMobileIntegration.init();
 
-    this.resetSignRequestCallback = resetSignRequestCallback;
+    // this.resetSignRequestCallback = resetSignRequestCallback;
 
     this.resetSignRequest();
 
-    console.log("CombinedClient constructor end");
+    log.debug("CombinedClient constructor end");
   }
 
   /**
@@ -78,10 +72,12 @@ export class CombinedClient {
    *
    */
   public static async init(
-    avmChannel: AutogramVMobileIntegrationInterfaceStateful = new AvmSimpleChannel(),
+    clientMobileIntegration: AutogramVMobileIntegrationInterfaceStateful = new AvmSimpleChannel(),
+    clientDesktopIntegration: AutogramDesktopIntegrationInterface = new AutogramDesktopSimpleChannel(),
     resetSignRequestCallback?: () => void
   ): Promise<CombinedClient> {
-    console.log("CombinedClient init");
+    // TODO: WIP 
+    log.debug("init");
     async function createUI(): Promise<AutogramRoot> {
       const root: AutogramRoot = document.createElement(
         "autogram-root"
@@ -90,12 +86,12 @@ export class CombinedClient {
 
       await new Promise<void>((resolve, reject) => {
         try {
-          console.log("CombinedClient init addEventListener");
+          log.debug("CombinedClient init addEventListener");
           const resolved = false;
           const listener = root.addEventListener(
             "load",
             () => {
-              console.log("CombinedClient init load event");
+              log.debug("CombinedClient init load event");
               if (!resolved) {
                 resolve();
               }
@@ -103,7 +99,7 @@ export class CombinedClient {
             { once: true }
           );
           if (root.isConnected) {
-            console.log("CombinedClient init already connected", { root });
+            log.debug("CombinedClient init already connected", { root });
             resolve();
           }
         } catch (e) {
@@ -112,21 +108,26 @@ export class CombinedClient {
         }
       });
 
-      console.log({ root: root, ss: root.startSigning });
+      log.debug({ root: root, ss: root.startSigning });
 
       return root as AutogramRoot;
     }
 
-    console.log("CombinedClient init createUI");
+    log.debug("CombinedClient init createUI");
     const ui = await createUI();
 
-    console.log("CombinedClient init new CombinedClient");
-    return new CombinedClient(ui, avmChannel, resetSignRequestCallback);
+    log.debug("CombinedClient init new CombinedClient");
+    return new CombinedClient(
+      ui,
+      clientMobileIntegration,
+      clientDesktopIntegration,
+      resetSignRequestCallback
+    );
   }
 
   public setResetSignRequestCallback(callback: () => void) {
     if (this.resetSignRequestCallback !== undefined) {
-      console.warn("resetSignRequestCallback already set");
+      log.warn("resetSignRequestCallback already set");
     }
     if (typeof callback !== "function") {
       throw new Error("callback is not a function");
@@ -134,12 +135,40 @@ export class CombinedClient {
     this.resetSignRequestCallback = callback;
   }
 
-  private async _sign(
+  /**
+   *
+   * @param document document to sign
+   * @param signatureParameters how to sign the document
+   * @param payloadMimeType mime type of the input document
+   * @param decodeBase64 if false the content will be (stay) base64 encoded, if true we will decode it
+   * @returns
+   */
+  public async sign(
+    document: DesktopAutogramDocument,
+    signatureParameters: SignatureParameters,
+    payloadMimeType: string,
+    decodeBase64 = false
+  ) {
+    const signedObject = await this.signBasedOnUserChoice(
+      document,
+      signatureParameters,
+      payloadMimeType
+    );
+    return {
+      ...signedObject,
+      content: decodeBase64
+        ? Base64.decode(signedObject.content)
+        : signedObject.content,
+    };
+  }
+
+  private async signBasedOnUserChoice(
     document: DesktopAutogramDocument,
     signatureParameters: SignatureParameters,
     payloadMimeType: string
   ) {
-    console.log("sign", this.ui);
+    // TODO: remove
+    log.debug("sign", this.ui);
     const signingMethod = await this.ui.startSigning();
     if (signingMethod === SigningMethod.reader) {
       const abortController = new AbortController();
@@ -157,58 +186,32 @@ export class CombinedClient {
         payloadMimeType
       );
     } else {
-      console.log("Invalid signing method");
+      log.debug("Invalid signing method");
       throw new Error("Invalid signing method");
     }
   }
 
-  /**
-   *
-   * @param document document to sign
-   * @param signatureParameters how to sign the document
-   * @param payloadMimeType mime type of the input document
-   * @param decodeBase64 if false the content will be (stay) base64 encoded, if true we will decode it
-   * @returns
-   */
-  public async sign(
-    document: DesktopAutogramDocument,
-    signatureParameters: SignatureParameters,
-    payloadMimeType: string,
-    decodeBase64 = false
-  ) {
-    const signedObject = await this._sign(
-      document,
-      signatureParameters,
-      payloadMimeType
-    );
-    return {
-      ...signedObject,
-      content: decodeBase64
-        ? Base64.decode(signedObject.content)
-        : signedObject.content,
-    };
-  }
-
   private async launchDesktop(abortController?: AbortController) {
     try {
-      const info = await this.client.info();
+      const info = await this.clientDesktopIntegration.info();
       if (info.status != "READY") throw new Error("Wait for server");
-      console.log(`Autogram ${info.version} is ready`);
+      log.info(`Autogram ${info.version} is ready`);
     } catch (e) {
       console.error(e);
-      const url = this.client.getLaunchURL();
-      console.log(`Opening "${url}"`);
+      const url = await this.clientDesktopIntegration.getLaunchURL();
+      log.info(`Opening "${url}"`);
       window.location.assign(url);
       try {
-        const info = await this.client.waitForStatus(
+        const info = await this.clientDesktopIntegration.waitForStatus(
           "READY",
           100,
           5,
           abortController
         );
-        console.log(`Autogram ${info.version} is ready`);
+        log.info(`Autogram ${info.version} is ready`);
       } catch (e) {
-        console.log("waiting for Autogram failed");
+        log.error("waiting for Autogram failed");
+        log.error(e);
         console.error(e);
       }
     }
@@ -219,8 +222,8 @@ export class CombinedClient {
     signatureParameters: DesktopSignatureParameters,
     payloadMimeType: string
   ): Promise<SignedObject> {
-    console.log("getSignatureDesktop");
-    return this.client
+    log.info("getSignatureDesktop");
+    return this.clientDesktopIntegration
       .sign(document, signatureParameters, payloadMimeType)
       .then((signedObject) => {
         // TODO("restart SignRequest?");
@@ -235,9 +238,9 @@ export class CombinedClient {
         return signedObject;
       })
       .catch((reason) => {
-        if (reason instanceof UserCancelledSigningException) {
-          console.log("User cancelled request");
-          throw "User cancelled request"; // TODO: tu mozno nema byt error
+        if (reason instanceof DesktopUserCancelledSigningException) {
+          log.info("User cancelled request");
+          throw new UserCancelledSigningException();
         } else {
           console.error(reason);
           throw reason;
@@ -269,13 +272,13 @@ export class CombinedClient {
         payloadMimeType: payloadMimeType,
       });
       const url = await this.clientMobileIntegration.getQrCodeUrl();
-      console.log({ url });
+      log.debug({ url });
       const abortController = new AbortController();
       this.ui.showQRCode(url, abortController);
       const signedObject = await this.clientMobileIntegration.waitForSignature(
         abortController
       );
-      console.log({ signedObject });
+      log.debug({ signedObject });
       if (signedObject === null || signedObject === undefined) {
         throw new Error("Signing cancelled");
       }
@@ -312,7 +315,9 @@ export class CombinedClient {
    */
   public resetSignRequest() {
     this.signerIdentificationListeners = [];
-    this.resetSignRequestCallback?.(); // from outside - this.signRequest = new SignRequest();
+    if (this.resetSignRequestCallback) {
+      this.resetSignRequestCallback?.();
+    } // from outside - this.signRequest = new SignRequest();
   }
 
   /**
@@ -322,12 +327,4 @@ export class CombinedClient {
   public getSignatureIndex() {
     return this.signatureIndex;
   }
-}
-
-/**
- *
- * @returns true if the browser is Safari (heuristic based on navigator.userAgent)
- */
-export function isSafari(): boolean {
-  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 }

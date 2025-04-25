@@ -3,6 +3,9 @@ import { SignJWT } from "jose";
 import z from "zod";
 import { paths } from "./avm-api.generated";
 import { Base64 } from "js-base64";
+import { createLogger } from "../../log";
+
+const log = createLogger("ag-sdk:AvmIntegration");
 
 export interface AvmIntegrationDocument {
   guid: string | null;
@@ -48,13 +51,13 @@ export class AutogramVMobileIntegration
     this.keyPair = await this.getKeyPairFromDb();
 
     this.integrationGuid = await this.getIntegrationGuidFromDb();
-    console.log(this.keyPair);
+    log.debug(this.keyPair);
 
     if (!this.keyPair || !this.integrationGuid) {
       await this.register();
     }
 
-    console.log("keys init", {
+    log.debug("keys init", {
       public: await this.getPublicKeyStr(),
       guid: this.integrationGuid,
     });
@@ -69,14 +72,14 @@ export class AutogramVMobileIntegration
     }
 
     if (!doc.guid || !doc.encryptionKey) {
-      console.log(doc);
+      log.debug(doc);
       throw new Error("Document guid or key missing");
     }
 
     let integrationObj = {};
     if (enableIntegration) {
       const integration = await this.getIntegrationBearerToken(true);
-      console.log("Integration JWT", integration);
+      log.debug("Integration JWT", integration);
       integrationObj = { integration: integration };
     }
 
@@ -96,7 +99,7 @@ export class AutogramVMobileIntegration
 
     const publicKey = await this.getPublicKeyStr();
 
-    console.log("Registering integration", publicKey);
+    log.info("Registering integration", publicKey);
 
     const res = await this.apiClient.registerIntegration({
       platform: "extension",
@@ -110,7 +113,7 @@ export class AutogramVMobileIntegration
     this.integrationGuid = res.guid;
     await this.saveIntegrationGuid(res.guid);
 
-    console.log("Integration registered", res);
+    log.info("Integration registered", res);
   }
 
   public async addDocument(
@@ -118,7 +121,7 @@ export class AutogramVMobileIntegration
   ): Promise<AvmIntegrationDocument> {
     // TODO zatial funguje iba pre jeden dokument
     const encryptionKey = await this.initDocumentKey();
-    console.log("Sending document", document);
+    log.debug("Sending document", document);
     const res = await this.apiClient.postDocuments(
       document,
       await this.getIntegrationBearerToken(),
@@ -140,7 +143,7 @@ export class AutogramVMobileIntegration
       !documentRef.encryptionKey ||
       !documentRef.lastModified
     ) {
-      console.log(documentRef);
+      log.debug(documentRef);
       throw new Error("Document guid, key or last-modified missing");
     }
 
@@ -158,7 +161,7 @@ export class AutogramVMobileIntegration
         documentRef.encryptionKey,
         documentRef.lastModified
       );
-      console.log(documentResult);
+      log.debug(documentResult);
       if (documentResult.status === "signed") {
         return documentResult.document;
       } else if (documentResult.status === "pending") {
@@ -220,7 +223,7 @@ export class AutogramVMobileIntegration
   }
 
   private async generateKeys() {
-    console.log("Generating keys");
+    log.info("Generating keys");
     // ES256
     const keyPair = await this.subtleCrypto.generateKey(
       {
@@ -230,10 +233,10 @@ export class AutogramVMobileIntegration
       true,
       ["sign", "verify"]
     );
-    console.log("Key pair generated", keyPair);
+    log.debug("Key pair generated", keyPair);
     await this.saveKeyPair(keyPair);
     this.keyPair = keyPair;
-    console.log("Keys generated", this.keyPair);
+    log.debug("Keys generated", this.keyPair);
   }
 
   private async saveKeyPair(keyPair: CryptoKeyPair) {
@@ -320,7 +323,7 @@ export class AutogramVMobileIntegrationApiClient {
   ): Promise<z.infer<typeof PostIntegrationResponse>> {
     const requestBody = JSON.stringify(data);
     const url = this.baseUrl + this._registerIntegration;
-    console.log("Registering integration", { url, requestBody });
+    log.debug("Registering integration", { url, requestBody });
     return (
       fetch(url, {
         method: "POST",
@@ -331,7 +334,7 @@ export class AutogramVMobileIntegrationApiClient {
       })
         .then(async (res) => {
           const text = await res.text();
-          console.log("Integration registration response", {
+          log.debug("Integration registration response", {
             text,
             status: res.status,
             statusText: res.statusText,
@@ -340,7 +343,7 @@ export class AutogramVMobileIntegrationApiClient {
         })
         // .then((res) => res.json())
         .catch((err) => {
-          console.error("Integration registration failed", err);
+          log.error("Integration registration failed", err);
           throw err;
         })
         .then((res) => PostIntegrationResponse.parse(res))
@@ -379,7 +382,7 @@ export class AutogramVMobileIntegrationApiClient {
     });
 
     if (res.status !== 200) {
-      console.log("API Error", res.status, res.statusText);
+      log.error("API Error", res.status, res.statusText);
       const json = await res.json();
       throw new Error(JSON.stringify(ApiErrorResponse.parse(json)));
     }
@@ -418,7 +421,7 @@ export class AutogramVMobileIntegrationApiClient {
     }
     if (res.status != 200) {
       const error = ApiErrorResponse.parse(await res.json());
-      console.error("API Error", error);
+      log.error("API Error", error);
       throw new Error(JSON.stringify(error));
     }
 

@@ -8,6 +8,9 @@ import {
   AutogramVMobileIntegrationInterfaceStateful,
   AutogramVMobileIntegration,
 } from "./avm-api/lib/apiClient";
+import { createLogger } from "./log";
+
+const log = createLogger("ag-sdk:AvmSimpleChannel");
 
 export class AvmSimpleChannel
   implements AutogramVMobileIntegrationInterfaceStateful
@@ -59,7 +62,7 @@ export class AvmSimpleChannel
       this.abortController
     );
     clearTimeout(timeout);
-    console.log("res", res);
+    log.debug("res", res);
     return res;
   }
 
