@@ -103,7 +103,7 @@ export class CombinedClient {
             resolve();
           }
         } catch (e) {
-          console.error(e);
+          log.error(e);
           reject(e);
         }
       });
@@ -197,7 +197,7 @@ export class CombinedClient {
       if (info.status != "READY") throw new Error("Wait for server");
       log.info(`Autogram ${info.version} is ready`);
     } catch (e) {
-      console.error(e);
+      log.error(e);
       const url = await this.clientDesktopIntegration.getLaunchURL();
       log.info(`Opening "${url}"`);
       window.location.assign(url);
@@ -212,7 +212,6 @@ export class CombinedClient {
       } catch (e) {
         log.error("waiting for Autogram failed");
         log.error(e);
-        console.error(e);
       }
     }
   }
@@ -242,7 +241,7 @@ export class CombinedClient {
           log.info("User cancelled request");
           throw new UserCancelledSigningException();
         } else {
-          console.error(reason);
+          log.error(reason);
           throw reason;
         }
       });
@@ -305,7 +304,7 @@ export class CombinedClient {
         issuedBy: signedObject.signers?.at(-1)?.issuedBy ?? "(neznámy)",
       };
     } catch (e) {
-      console.error(e);
+      log.error(e);
       throw e;
     }
   }
