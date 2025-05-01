@@ -16,6 +16,7 @@ export class AutogramDesktopSimpleChannel
     let serverProtocol: "http" | "https" = "http";
     let serverHost = "localhost";
 
+    // This is only useful when not using worker, since the worker does not have the https limitation.
     if (isSafari()) {
       // Quick hack - mozno je lepsie urobit to ako fallback ak nefunguje http
       serverProtocol = "https";
