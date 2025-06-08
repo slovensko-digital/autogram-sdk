@@ -51,7 +51,7 @@ export class CombinedClient {
     private ui: AutogramRoot,
     private clientMobileIntegration: AutogramVMobileIntegrationInterfaceStateful = new AvmSimpleChannel(),
     private clientDesktopIntegration: AutogramDesktopIntegrationInterface = new AutogramDesktopSimpleChannel(),
-    private resetSignRequestCallback?: () => void,
+    private resetSignRequestCallback: (() => void) | undefined = undefined,
   ) {
     // this.ui = ui;
 

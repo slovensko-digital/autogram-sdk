@@ -34,6 +34,7 @@
     "generate-autogram-api-types": "npx openapi-typescript http://localhost:37200/docs/server.yml --default-non-nullable false --output src/autogram-api/lib/autogram-api.generated.ts && npx prettier --write src/autogram-api/lib/autogram-api.generated.ts",
     "generate-avm-api-types": "npx openapi-typescript https://autogram.slovensko.digital/openapi.yaml --output src/avm-api/lib/avm-api.generated.ts && npx jscodeshift -t src/avm-api/lib/avm-api.codemod.ts src/avm-api/lib/avm-api.generated.ts --extension=ts && npx prettier --write src/avm-api/lib/avm-api.generated.ts",
     "generate-docs": "npx typedoc",
+    "serve-docs": "npx http-server -c-1 -p 8080 -a 127.0.0.1 ./docs",
     "demo": "npx http-server -c-1 -p 8080 -a 127.0.0.1 ."
   },
   "repository": {
