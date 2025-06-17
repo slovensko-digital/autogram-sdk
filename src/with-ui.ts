@@ -315,7 +315,7 @@ export class CombinedClient {
   public resetSignRequest() {
     this.signerIdentificationListeners = [];
     if (this.resetSignRequestCallback) {
-      this.resetSignRequestCallback?.();
+      this.resetSignRequestCallback();
     } // from outside - this.signRequest = new SignRequest();
   }
 
