@@ -27,7 +27,6 @@
     }
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsup",
     "build:watch": "npm run build -- --watch",
     "build:release": "NODE_ENV=production rm -r dist && npm run build -- --env.NODE_ENV production",
@@ -35,7 +34,14 @@
     "generate-avm-api-types": "npx openapi-typescript https://autogram.slovensko.digital/openapi.yaml --output src/avm-api/lib/avm-api.generated.ts && npx jscodeshift -t src/avm-api/lib/avm-api.codemod.ts src/avm-api/lib/avm-api.generated.ts --extension=ts && npx prettier --write src/avm-api/lib/avm-api.generated.ts",
     "generate-docs": "npx typedoc",
     "serve-docs": "npx http-server -c-1 -p 8080 -a 127.0.0.1 ./docs",
-    "demo": "npx http-server -c-1 -p 8080 -a 127.0.0.1 ."
+    "demo": "npx http-server -c-1 -p 8080 -a 127.0.0.1 .",
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:debug": "npx playwright test --debug",
+    "test:channels": "npx playwright test tests/channels.spec.ts",
+    "test:client": "npx playwright test tests/combined-client.spec.ts",
+    "test:sdk": "npx playwright test tests/sdk.spec.ts",
+    "test:demo": "npx playwright test tests/demo-integration.spec.ts"
   },
   "repository": {
     "type": "git",
@@ -57,7 +63,9 @@
   },
   "homepage": "https://github.com/slovensko-digital/autogram-sdk#readme",
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@types/bwip-js": "^3.2.3",
+    "@types/node": "^22.15.30",
     "idb-keyval": "^6.2.1",
     "jest-environment-jsdom": "^29.7.0",
     "tsup": "^8.3.5",
