@@ -5,7 +5,6 @@
  */
 
 import {
-  apiClient as desktopApiClient,
   SignatureParameters as DesktopSignatureParameters,
   AutogramDocument as DesktopAutogramDocument,
   SignResponseBody as DesktopSignResponseBody,

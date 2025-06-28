@@ -8,7 +8,7 @@ export {
   apiClient as desktopApiClient,
   SignatureParameters as DesktopSignatureParameters,
   AutogramDocument as DesktopAutogramDocument,
-  SignResponseBody as DesktopSignResponseBody,
+  SignResponseBody as DesktopSignResponseBody, // TODO we could unify SignResponseBody from desktop and SignedDocument from avm
   ServerInfo as DesktopServerInfo,
 } from "./autogram-api/index";
 export { UserCancelledSigningException as DesktopUserCancelledSigningException } from "./autogram-api/lib/apiClient";
