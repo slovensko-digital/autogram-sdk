@@ -4,6 +4,7 @@ import { customElement, property } from "lit/decorators.js";
 import "./choice.screen";
 import "./sign-reader.screen";
 import "./sign-mobile.screen";
+import "./signing-cancelled.screen";
 import { EVENT_CLOSE, EVENT_SCREEN } from "./events";
 import { SigningMethod } from "./types";
 import { createLogger } from "../log";
@@ -15,6 +16,7 @@ enum Screens {
   choice,
   signReader,
   signMobile,
+  signingCancelled,
 }
 
 @customElement("autogram-root")
@@ -66,6 +68,8 @@ export class AutogramRoot extends LitElement {
 
   abortController: AbortController | null = null;
 
+  hideTimeout: ReturnType<typeof setTimeout> | null = null;
+
   render() {
     log.debug("render");
     return html`
@@ -78,6 +82,8 @@ export class AutogramRoot extends LitElement {
           ? html`<autogram-sign-mobile-screen
               url=${this.qrCodeUrl}
             ></autogram-sign-mobile-screen>`
+          : this.screen === Screens.signingCancelled
+          ? html`<autogram-signing-cancelled-screen></autogram-signing-cancelled-screen>`
           : ""}
       </div>
     `;
@@ -171,6 +177,14 @@ export class AutogramRoot extends LitElement {
     this.abortController = abortController;
   }
 
+  signingCancelled() {
+    this.screen = Screens.signingCancelled;
+    this.hideTimeout = setTimeout(() => {
+      this.hide();
+      this.reset();
+    }, 10000);
+  }
+
   showQRCode(url: string, abortController: AbortController) {
     this.screen = Screens.signMobile;
     this.qrCodeUrl = url;
@@ -187,6 +201,10 @@ export class AutogramRoot extends LitElement {
 
   reset() {
     log.debug("reset");
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+      this.hideTimeout = null;
+    }
     this.screen = Screens.choice;
     this.qrCodeUrl = null;
     if (this.abortController) {

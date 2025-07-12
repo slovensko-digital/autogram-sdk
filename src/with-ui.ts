@@ -9,7 +9,6 @@ import {
   AutogramDocument as DesktopAutogramDocument,
   SignResponseBody as DesktopSignResponseBody,
   SignatureParameters,
-  UserCancelledSigningException as DesktopUserCancelledSigningException,
 } from "./autogram-api/index";
 
 import { AutogramVMobileIntegrationInterfaceStateful } from "./avm-api/index";
@@ -21,7 +20,6 @@ import { AutogramDesktopIntegrationInterface } from "./autogram-api/lib/apiClien
 import { AutogramDesktopSimpleChannel } from "./channel-desktop";
 import { createLogger } from "./log";
 import { UserCancelledSigningException } from "./errors";
-
 
 export type SignedObject = DesktopSignResponseBody;
 // We have to leave this in because otherwise the custom elements are not registered
@@ -50,7 +48,7 @@ export class CombinedClient {
     private ui: AutogramRoot,
     private clientMobileIntegration: AutogramVMobileIntegrationInterfaceStateful = new AvmSimpleChannel(),
     private clientDesktopIntegration: AutogramDesktopIntegrationInterface = new AutogramDesktopSimpleChannel(),
-    private resetSignRequestCallback: (() => void) | undefined = undefined,
+    private resetSignRequestCallback: (() => void) | undefined = undefined
   ) {
     // this.ui = ui;
 
@@ -75,7 +73,7 @@ export class CombinedClient {
     clientDesktopIntegration: AutogramDesktopIntegrationInterface = new AutogramDesktopSimpleChannel(),
     resetSignRequestCallback?: () => void
   ): Promise<CombinedClient> {
-    // TODO: WIP 
+    // TODO: WIP
     log.debug("init");
     async function createUI(): Promise<AutogramRoot> {
       const root: AutogramRoot = document.createElement(
@@ -236,9 +234,10 @@ export class CombinedClient {
         return signedObject;
       })
       .catch((reason) => {
-        if (reason instanceof DesktopUserCancelledSigningException) {
+        if (reason instanceof UserCancelledSigningException) {
           log.info("User cancelled request");
-          throw new UserCancelledSigningException();
+          this.ui.signingCancelled();
+          throw reason;
         } else {
           log.error(reason);
           throw reason;

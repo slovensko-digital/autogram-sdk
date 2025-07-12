@@ -9,7 +9,6 @@ export {
   AutogramDocument as DesktopAutogramDocument,
   SignResponseBody as DesktopSignResponseBody,
 } from "./autogram-api/index";
-export { UserCancelledSigningException as DesktopUserCancelledSigningException } from "./autogram-api/lib/apiClient";
 
 /* Autogram V Mobile */
 export {
