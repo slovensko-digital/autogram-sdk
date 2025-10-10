@@ -182,6 +182,12 @@ export class CombinedClient {
         signatureParameters,
         payloadMimeType
       );
+    } else if (signingMethod === SigningMethod.mobileOnMobile) {
+      return this.getSignatureMobileOnMobile(
+        document,
+        signatureParameters,
+        payloadMimeType
+      );
     } else {
       log.debug("Invalid signing method");
       throw new Error("Invalid signing method");
@@ -251,60 +257,100 @@ export class CombinedClient {
     payloadMimeType: string
   ): Promise<SignedObject> {
     try {
-      const params = signatureParameters;
-      const container =
-        params.container == null
-          ? null
-          : params.container == "ASiC_E"
-          ? "ASiC-E"
-          : "ASiC-S";
-
-      await this.clientMobileIntegration.loadOrRegister();
-      await this.clientMobileIntegration.addDocument({
-        document: document,
-        parameters: {
-          ...params,
-          container: container ?? undefined,
-        },
-        payloadMimeType: payloadMimeType,
-      });
-      const url = await this.clientMobileIntegration.getQrCodeUrl();
-      log.debug({ url });
+      const url = await this.getSignatureMobileAvmUrl(
+        signatureParameters,
+        document,
+        payloadMimeType
+      );
       const abortController = new AbortController();
       this.ui.showQRCode(url, abortController);
-      const signedObject = await this.clientMobileIntegration.waitForSignature(
-        abortController
-      );
-      log.debug({ signedObject });
-      if (signedObject === null || signedObject === undefined) {
-        throw new Error("Signing cancelled");
-      }
 
-      // const signedObject2 = {
-      //   content: signedObject.content,
-      //   signedBy:
-      //     signedObject.signers?.at(-1)?.signedBy ?? "Používateľ Autogramu",
-      //   issuedBy: signedObject.signers?.at(-1)?.issuedBy ?? "(neznámy)",
-      // };
-
-      this.signerIdentificationListeners.forEach((cb) => cb());
-      this.signerIdentificationListeners = [];
-      this.signatureIndex++;
-
-      this.ui.hide();
-
-      this.clientMobileIntegration.reset();
-      this.ui.reset();
-      return {
-        content: signedObject.content,
-        signedBy:
-          signedObject.signers?.at(-1)?.signedBy ?? "Používateľ Autogramu",
-        issuedBy: signedObject.signers?.at(-1)?.issuedBy ?? "(neznámy)",
-      };
+      return await this.getSignatureMobileSignDocument(abortController);
     } catch (e) {
       log.error(e);
       throw e;
     }
+  }
+
+  private async getSignatureMobileOnMobile(
+    document: DesktopAutogramDocument,
+    signatureParameters: DesktopSignatureParameters,
+    payloadMimeType: string
+  ): Promise<SignedObject> {
+    try {
+      const url = await this.getSignatureMobileAvmUrl(
+        signatureParameters,
+        document,
+        payloadMimeType
+      );
+
+      window.open(url, "_blank", "noopener");
+
+      return await this.getSignatureMobileSignDocument();
+    } catch (e) {
+      log.error(e);
+      throw e;
+    }
+  }
+
+  private async getSignatureMobileAvmUrl(
+    signatureParameters: SignatureParameters,
+    document: { filename?: string; content: string },
+    payloadMimeType: string
+  ) {
+    const params = signatureParameters;
+    const container =
+      params.container == null
+        ? null
+        : params.container == "ASiC_E"
+        ? "ASiC-E"
+        : "ASiC-S";
+
+    await this.clientMobileIntegration.loadOrRegister();
+    await this.clientMobileIntegration.addDocument({
+      document: document,
+      parameters: {
+        ...params,
+        container: container ?? undefined,
+      },
+      payloadMimeType: payloadMimeType,
+    });
+    const url = await this.clientMobileIntegration.getQrCodeUrl();
+    log.debug({ url });
+    return url;
+  }
+
+  private async getSignatureMobileSignDocument(
+    abortController?: AbortController
+  ) {
+    const signedObject = await this.clientMobileIntegration.waitForSignature(
+      abortController
+    );
+    log.debug({ signedObject });
+    if (signedObject === null || signedObject === undefined) {
+      throw new Error("Signing cancelled");
+    }
+
+    // const signedObject2 = {
+    //   content: signedObject.content,
+    //   signedBy:
+    //     signedObject.signers?.at(-1)?.signedBy ?? "Používateľ Autogramu",
+    //   issuedBy: signedObject.signers?.at(-1)?.issuedBy ?? "(neznámy)",
+    // };
+    this.signerIdentificationListeners.forEach((cb) => cb());
+    this.signerIdentificationListeners = [];
+    this.signatureIndex++;
+
+    this.ui.hide();
+
+    this.clientMobileIntegration.reset();
+    this.ui.reset();
+    return {
+      content: signedObject.content,
+      signedBy:
+        signedObject.signers?.at(-1)?.signedBy ?? "Používateľ Autogramu",
+      issuedBy: signedObject.signers?.at(-1)?.issuedBy ?? "(neznámy)",
+    };
   }
 
   /**

@@ -9,14 +9,17 @@ import { EVENT_CLOSE, EVENT_SCREEN } from "./events";
 import { SigningMethod } from "./types";
 import { createLogger } from "../log";
 import { UserCancelledSigningException } from "../errors";
+import { isMobileDevice } from "../utils";
 
 const log = createLogger("ag-sdk:root");
 
+// States of the UI - ~routes
 enum Screens {
   choice,
   signReader,
   signMobile,
   signingCancelled,
+  signMobileOnMobile,
 }
 
 @customElement("autogram-root")
@@ -84,6 +87,11 @@ export class AutogramRoot extends LitElement {
             ></autogram-sign-mobile-screen>`
           : this.screen === Screens.signingCancelled
           ? html`<autogram-signing-cancelled-screen></autogram-signing-cancelled-screen>`
+          : this.screen === Screens.signMobileOnMobile
+          ? html`<div>Signing on mobile device</div>
+              <autogram-signing-mobile-on-mobile-screen
+                url=${this.qrCodeUrl}
+              ></autogram-signing-mobile-on-mobile-screen>`
           : ""}
       </div>
     `;
@@ -125,6 +133,13 @@ export class AutogramRoot extends LitElement {
 
   public async startSigning() {
     log.debug("startSigning");
+    // If we are on mobile just start signing
+    if (isMobileDevice()) {
+      this.screen = Screens.signMobileOnMobile;
+      this.show();
+      return Promise.resolve(SigningMethod.mobileOnMobile);
+    }
+
     this.screen = Screens.choice;
     this.show();
     return new Promise<SigningMethod>((resolve, reject) => {
