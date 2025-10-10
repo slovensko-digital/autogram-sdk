@@ -284,6 +284,7 @@ export class CombinedClient {
         payloadMimeType
       );
 
+      this.ui.openMobileOnMobile(url, new AbortController());
       window.open(url, "_blank", "noopener");
 
       return await this.getSignatureMobileSignDocument();

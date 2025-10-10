@@ -4,6 +4,7 @@ import { customElement, property } from "lit/decorators.js";
 import "./choice.screen";
 import "./sign-reader.screen";
 import "./sign-mobile.screen";
+import "./sign-mobile-on-mobile.screen";
 import "./signing-cancelled.screen";
 import { EVENT_CLOSE, EVENT_SCREEN } from "./events";
 import { SigningMethod } from "./types";
@@ -67,7 +68,7 @@ export class AutogramRoot extends LitElement {
   screen = Screens.choice;
 
   @property()
-  qrCodeUrl: string | null = null;
+  mobileSigningUrl: string | null = null;
 
   abortController: AbortController | null = null;
 
@@ -83,15 +84,14 @@ export class AutogramRoot extends LitElement {
           ? html`<autogram-sign-reader-screen></autogram-sign-reader-screen>`
           : this.screen === Screens.signMobile
           ? html`<autogram-sign-mobile-screen
-              url=${this.qrCodeUrl}
+              url=${this.mobileSigningUrl}
             ></autogram-sign-mobile-screen>`
           : this.screen === Screens.signingCancelled
           ? html`<autogram-signing-cancelled-screen></autogram-signing-cancelled-screen>`
           : this.screen === Screens.signMobileOnMobile
-          ? html`<div>Signing on mobile device</div>
-              <autogram-signing-mobile-on-mobile-screen
-                url=${this.qrCodeUrl}
-              ></autogram-signing-mobile-on-mobile-screen>`
+          ? html`<autogram-signing-mobile-on-mobile-screen
+              url=${this.mobileSigningUrl}
+            ></autogram-signing-mobile-on-mobile-screen>`
           : ""}
       </div>
     `;
@@ -202,7 +202,13 @@ export class AutogramRoot extends LitElement {
 
   showQRCode(url: string, abortController: AbortController) {
     this.screen = Screens.signMobile;
-    this.qrCodeUrl = url;
+    this.mobileSigningUrl = url;
+    this.abortController = abortController;
+  }
+
+  openMobileOnMobile(url: string, abortController: AbortController) {
+    this.screen = Screens.signMobileOnMobile;
+    this.mobileSigningUrl = url;
     this.abortController = abortController;
   }
 
@@ -221,7 +227,7 @@ export class AutogramRoot extends LitElement {
       this.hideTimeout = null;
     }
     this.screen = Screens.choice;
-    this.qrCodeUrl = null;
+    this.mobileSigningUrl = null;
     if (this.abortController) {
       this.abortController.abort();
     }

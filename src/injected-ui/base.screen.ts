@@ -110,6 +110,33 @@ export class AutogramBaseScreen extends LitElement {
       min-height: 200px;
       width: 100%;
     }
+
+    .button {
+      box-sizing: border-box;
+      /* Website/Button */
+
+      display: inline-block;
+      padding: 10px 20px;
+      gap: 10px;
+
+      font-family: "Source Sans 3", sans-serif;
+      font-style: normal;
+      font-weight: 600;
+      font-size: 18px;
+      line-height: 24px;
+      /* identical to box height, or 133% */
+
+      text-align: center;
+      text-decoration: none;
+
+      /* Farby tlačidiel/Primárne tlačidlo */
+      background: #126dff;
+      border-radius: 8px;
+      border: none;
+      color: #ffffff;
+
+      cursor: pointer;
+    }
   `;
   render() {
     return html`
