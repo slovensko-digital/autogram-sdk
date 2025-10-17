@@ -13,11 +13,12 @@ export interface AvmIntegrationDocument {
   lastModified: string | null;
 }
 
+// TODO what does this do? Is this just integration client? Why does it have different API than the channel part?
 /**
  * Stateful integration with Autogram v mobile
  */
 export class AutogramVMobileIntegration
-  implements AutogramVMobileIntegrationInterface
+  implements AutogramVMobileIntegrationPrivateInterface
 {
   private apiClient: AutogramVMobileIntegrationApiClient;
 
@@ -45,6 +46,9 @@ export class AutogramVMobileIntegration
     this.db = db;
   }
 
+  /**
+   * Load the key pair and integration GUID from the database, or register a new integration if not found.
+   */
   public async loadOrRegister() {
     this.loadSubtleCrypto();
     // load
@@ -63,6 +67,13 @@ export class AutogramVMobileIntegration
     });
   }
 
+  /**
+   * Generates a QR code URL for sharing a document signing
+   *
+   * @param doc document
+   * @param enableIntegration whether to add integration data to the URL - when this code is used AVM will try to register this instance with the mobile app for sending notifications
+   * @returns URL string
+   */
   public async getQrCodeUrl(
     doc: AvmIntegrationDocument,
     enableIntegration = false
@@ -90,6 +101,9 @@ export class AutogramVMobileIntegration
     });
   }
 
+  /**
+   * Register a new integration with the Autogram v mobile server.
+   */
   private async register() {
     if (this.keyPair && this.integrationGuid) {
       throw new Error("Already registered.");
@@ -116,6 +130,12 @@ export class AutogramVMobileIntegration
     log.info("Integration registered", res);
   }
 
+  /**
+   * Send a document to serverr to be signed later.
+   *
+   * @param document to add
+   * @returns documentRef for further operations
+   */
   public async addDocument(
     document: DocumentToSign
   ): Promise<AvmIntegrationDocument> {
@@ -132,6 +152,30 @@ export class AutogramVMobileIntegration
       encryptionKey: encryptionKey,
       lastModified: res.lastModified,
     };
+  }
+
+  /**
+   * Checks the status of a document on the server.
+   * Uses GET /documents/{guid} endpoint.
+   *
+   * @param documentRef which document to check
+   * @returns status of the document from the server
+   */
+  public async checkDocumentStatus(
+    documentRef: AvmIntegrationDocument
+  ): Promise<
+    { status: "pending" } | { status: "signed"; document: SignedDocument }
+  > {
+    if (!documentRef.guid || !documentRef.encryptionKey) {
+      log.debug(documentRef);
+      throw new Error("Document guid or key missing");
+    }
+
+    return await this.apiClient.getDocument(
+      { guid: documentRef.guid },
+      documentRef.encryptionKey,
+      documentRef.lastModified || undefined
+    );
   }
 
   public async waitForSignature(
@@ -287,23 +331,98 @@ export class AutogramVMobileIntegration
   }
 }
 
-export interface AutogramVMobileIntegrationInterface {
+export interface AutogramVMobileIntegrationPrivateInterface {
   loadOrRegister(): Promise<void>;
   getQrCodeUrl(doc: AvmIntegrationDocument): Promise<string>;
   addDocument(documentToSign: DocumentToSign): Promise<AvmIntegrationDocument>;
+  checkDocumentStatus(
+    doc: AvmIntegrationDocument
+  ): Promise<
+    { status: "pending" } | { status: "signed"; document: SignedDocument }
+  >;
   waitForSignature(
     doc: AvmIntegrationDocument,
     abortController?: AbortController
   ): Promise<SignedDocument>;
 }
 
+/**
+ * Public interface for stateful Autogram v mobile integration/channel
+ */
 export interface AutogramVMobileIntegrationInterfaceStateful {
+  /**
+   * Extension point for initializing the integration
+   */
   init(): Promise<void>;
+  /**
+   * Load existing or register new integration with the Autogram v mobile server
+   */
   loadOrRegister(): Promise<void>;
+  /**
+   * Get QR code URL for the document to be signed
+   *
+   * @returns URL string
+   */
   getQrCodeUrl(): Promise<string>;
+  /**
+   * Add a document to be signed (currently only one document is supported)
+   * @param documentToSign Document to be signed
+   */
   addDocument(documentToSign: DocumentToSign): Promise<void>;
+  /**
+   * Waits for the document to be signed, resolving when the document is signed.
+   *
+   * @param abortController Optional AbortController to cancel the waiting
+   * @returns Promise that resolves to the signed document
+   */
   waitForSignature(abortController?: AbortController): Promise<SignedDocument>;
   reset(): Promise<void>;
+  /**
+   * Manages restore points for handling page reloads during the signing process.
+   *
+   * When a page gets reloaded and you have a restorePoint set up, this method will:
+   * 1. Check if a restore point with the given identifier exists
+   * 2. If found, check if the document is already signed
+   * 3. If signed, restore the state and return true (signing complete)
+   * 4. If not signed yet, restore the state and return false (continue signing)
+   * 5. If no restore point exists, save the current state and return false
+   *
+   * @param restorePoint - A unique string/hash identifier for the restore point (e.g., document hash, session ID)
+   * @returns Promise that resolves to:
+   *   - `true` if a restore point was found AND the document is already signed
+   *   - `false` if no restore point exists, or restore point found but document is still pending
+   *
+   * @example
+   * ```typescript
+   * const channel = new AvmSimpleChannel();
+   * await channel.loadOrRegister();
+   *
+   * // Generate a unique restore point identifier (e.g., based on document hash)
+   * const restorePoint = `doc-${documentHash}-${signers}-${url}`;
+   *
+   * // Check if we're restoring from a previous session
+   * const isRestored = await channel.useRestorePoint(restorePoint);
+   *
+   * if (isRestored) {
+   *   // Document was already signed during previous session
+   *   const signedDoc = await channel.waitForSignature(); // Will return immediately
+   *   console.log("Document already signed:", signedDoc);
+   * } else {
+   *   // Either new signing or continuing from previous session
+   *   await channel.addDocument(documentToSign);
+   *   const qrUrl = await channel.getQrCodeUrl();
+   *   // Show QR code to user...
+   *   const signedDoc = await channel.waitForSignature();
+   * }
+   * ```
+   *
+   * @remarks
+   * **Use case:** User starts signing, switches to Autogram v Mobile app.
+   * Android pauses the browser (e.g., Firefox). User completes signing in AVM.
+   * When user returns to browser, the page reloads. Using restore points,
+   * the app can detect the document was already signed and complete without user interaction.
+   */
+  useRestorePoint(restorePoint: string): Promise<boolean>;
 }
 
 /**

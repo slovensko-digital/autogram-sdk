@@ -194,6 +194,11 @@ export class CombinedClient {
     }
   }
 
+  public useRestorePoint(restorePoint: string): Promise<boolean> {
+    log.debug("useRestorePoint", restorePoint);
+    return this.clientMobileIntegration.useRestorePoint(restorePoint);
+  }
+
   private async launchDesktop(abortController?: AbortController) {
     try {
       const info = await this.clientDesktopIntegration.info();

@@ -73,4 +73,49 @@ export class AvmSimpleChannel
     this.documentRef = null;
     this.abortController = null;
   }
+
+  async useRestorePoint(restorePoint: string): Promise<boolean> {
+    const restoreKey = `restorePoint:${restorePoint}`;
+    
+    // Try to load the saved document reference
+    const savedDocumentRef = await get<AVMIntegrationDocument>(restoreKey);
+    
+    if (!savedDocumentRef) {
+      // No restore point found, save current state if we have a document
+      if (this.documentRef) {
+        await set(restoreKey, this.documentRef);
+        log.info("Created new restore point", restorePoint);
+      }
+      return false;
+    }
+    
+    // Restore point found, check if document is already signed
+    try {
+      if (!savedDocumentRef.guid || !savedDocumentRef.encryptionKey) {
+        log.debug("Invalid saved document reference", savedDocumentRef);
+        return false;
+      }
+      
+      // Check document status without polling
+      const documentResult = await this.apiClient.checkDocumentStatus(savedDocumentRef);
+      
+      if (documentResult.status === "signed") {
+        // Document is signed, restore state and return true
+        this.documentRef = savedDocumentRef;
+        log.info("Restore point used - document already signed", restorePoint);
+        // Clean up restore point
+        await set(restoreKey, undefined);
+        return true;
+      } else {
+        // TODO: does this make sense?
+        // Document not signed yet, restore state for continued signing
+        this.documentRef = savedDocumentRef;
+        log.info("Restore point used - document pending", restorePoint);
+        return false;
+      }
+    } catch (error) {
+      log.error("Error checking restore point", error);
+      return false;
+    }
+  }
 }
