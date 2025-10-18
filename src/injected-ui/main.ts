@@ -172,6 +172,7 @@ export class AutogramRoot extends LitElement {
           },
         },
       ];
+      // TODO: this may be really bad idea - why would we do this on every click?
       const removeHandlers = () => {
         log.debug("removeHandlers");
         eventHandlers.forEach(({ event, handler }) => {

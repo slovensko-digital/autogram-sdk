@@ -167,6 +167,7 @@ export class CombinedClient {
     // TODO: remove
     log.debug("sign", this.ui);
     const signingMethod = await this.ui.startSigning();
+    log.debug("User chose signing method", signingMethod);
     if (signingMethod === SigningMethod.reader) {
       const abortController = new AbortController();
       this.ui.desktopSigning(abortController);
