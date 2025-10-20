@@ -163,9 +163,7 @@ export class AutogramVMobileIntegration
    */
   public async checkDocumentStatus(
     documentRef: AvmIntegrationDocument
-  ): Promise<
-    { status: "pending" } | { status: "signed"; document: SignedDocument }
-  > {
+  ): Promise<Pick<GetDocumentResult, "status">> {
     if (!documentRef.guid || !documentRef.encryptionKey) {
       log.debug(documentRef);
       throw new Error("Document guid or key missing");
@@ -337,9 +335,7 @@ export interface AutogramVMobileIntegrationPrivateInterface {
   addDocument(documentToSign: DocumentToSign): Promise<AvmIntegrationDocument>;
   checkDocumentStatus(
     doc: AvmIntegrationDocument
-  ): Promise<
-    { status: "pending" } | { status: "signed"; document: SignedDocument }
-  >;
+  ): Promise<Pick<GetDocumentResult, "status">>;
   waitForSignature(
     doc: AvmIntegrationDocument,
     abortController?: AbortController
@@ -538,10 +534,22 @@ export class AutogramVMobileIntegrationApiClient {
     if (res.status == 304) {
       return { status: "pending" };
     }
+    if (res.status == 404) {
+      return { status: "not found" };
+    }
     if (res.status != 200) {
-      const error = ApiErrorResponse.parse(await res.json());
-      log.error("API Error", error);
-      throw new Error(JSON.stringify(error));
+      try {
+        const error = ApiErrorResponse.parse(await res.json());
+        log.error("API Error", error);
+        throw new Error(JSON.stringify(error));
+      } catch (e) {
+        log.error(
+          "API Error with non-JSON response",
+          res.status,
+          res.statusText
+        );
+        throw new Error(`API Error: ${res.status} ${res.statusText}`);
+      }
     }
 
     const resJson = await res.json();
@@ -636,13 +644,16 @@ export type DocumentToSign = NonNullable<
 >["content"]["application/json"];
 
 export type SignedDocument = z.infer<typeof GetDocumentsResponse>;
-type GetDocumentResult =
+export type GetDocumentResult =
   | {
       status: "pending";
     }
   | {
       status: "signed";
       document: SignedDocument;
+    }
+  | {
+      status: "not found";
     };
 
 // Helper functions
