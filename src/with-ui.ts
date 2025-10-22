@@ -19,7 +19,7 @@ import { SigningMethod } from "./injected-ui/types";
 import { AutogramDesktopIntegrationInterface } from "./autogram-api/lib/apiClient";
 import { AutogramDesktopSimpleChannel } from "./channel-desktop";
 import { createLogger } from "./log";
-import { UserCancelledSigningException } from "./errors";
+import { AutogramSdkException, UserCancelledSigningException } from "./errors";
 
 export type SignedObject = DesktopSignResponseBody;
 // We have to leave this in because otherwise the custom elements are not registered
@@ -100,7 +100,7 @@ export class CombinedClient {
             resolve();
           }
         } catch (e) {
-          log.error(e);
+          log.error("CombinedClient init createUI failed", e);
           reject(e);
         }
       });
@@ -146,17 +146,29 @@ export class CombinedClient {
     payloadMimeType: string,
     decodeBase64 = false
   ) {
-    const signedObject = await this.signBasedOnUserChoice(
-      document,
-      signatureParameters,
-      payloadMimeType
-    );
-    return {
-      ...signedObject,
-      content: decodeBase64
-        ? Base64.decode(signedObject.content)
-        : signedObject.content,
-    };
+    try {
+      const signedObject = await this.signBasedOnUserChoice(
+        document,
+        signatureParameters,
+        payloadMimeType
+      );
+      return {
+        ...signedObject,
+        content: decodeBase64
+          ? Base64.decode(signedObject.content)
+          : signedObject.content,
+      };
+    } catch (e) {
+      if (e instanceof UserCancelledSigningException) {
+        log.info("User cancelled request");
+        this.ui.signingCancelled();
+        throw e;
+      } else if (e instanceof AutogramSdkException) {
+        this.ui.showError(e.message);
+      }
+      log.error("Signing failed", e);
+      throw e;
+    }
   }
 
   private async signBasedOnUserChoice(
@@ -167,27 +179,32 @@ export class CombinedClient {
     // TODO: remove
     log.debug("sign", this.ui);
     const signingMethod = await this.ui.startSigning();
+
     log.debug("User chose signing method", signingMethod);
+
+    const abortController = new AbortController();
     if (signingMethod === SigningMethod.reader) {
-      const abortController = new AbortController();
       this.ui.desktopSigning(abortController);
       await this.launchDesktop(abortController);
       return this.getSignatureDesktop(
         document,
         signatureParameters,
-        payloadMimeType
+        payloadMimeType,
+        abortController
       );
     } else if (signingMethod === SigningMethod.mobile) {
       return this.getSignatureMobile(
         document,
         signatureParameters,
-        payloadMimeType
+        payloadMimeType,
+        abortController
       );
     } else if (signingMethod === SigningMethod.mobileOnMobile) {
       return this.getSignatureMobileOnMobile(
         document,
         signatureParameters,
-        payloadMimeType
+        payloadMimeType,
+        abortController
       );
     } else {
       log.debug("Invalid signing method");
@@ -206,7 +223,7 @@ export class CombinedClient {
       if (info.status != "READY") throw new Error("Wait for server");
       log.info(`Autogram ${info.version} is ready`);
     } catch (e) {
-      log.error(e);
+      log.error("launchDesktop failed, getting info failed", e);
       const url = await this.clientDesktopIntegration.getLaunchURL();
       log.info(`Opening "${url}"`);
       window.location.assign(url);
@@ -219,8 +236,7 @@ export class CombinedClient {
         );
         log.info(`Autogram ${info.version} is ready`);
       } catch (e) {
-        log.error("waiting for Autogram failed");
-        log.error(e);
+        log.error("launchDesktop failed, waiting for Autogram failed", e);
       }
     }
   }
@@ -228,11 +244,12 @@ export class CombinedClient {
   private async getSignatureDesktop(
     document: DesktopAutogramDocument,
     signatureParameters: DesktopSignatureParameters,
-    payloadMimeType: string
+    payloadMimeType: string,
+    abortController: AbortController
   ): Promise<SignedObject> {
     log.info("getSignatureDesktop");
     return this.clientDesktopIntegration
-      .sign(document, signatureParameters, payloadMimeType)
+      .sign(document, signatureParameters, payloadMimeType, abortController)
       .then((signedObject) => {
         // TODO("restart SignRequest?");
 
@@ -251,7 +268,7 @@ export class CombinedClient {
           this.ui.signingCancelled();
           throw reason;
         } else {
-          log.error(reason);
+          log.error("getSignatureDesktop failed", reason);
           throw reason;
         }
       });
@@ -260,7 +277,8 @@ export class CombinedClient {
   private async getSignatureMobile(
     document: DesktopAutogramDocument,
     signatureParameters: DesktopSignatureParameters,
-    payloadMimeType: string
+    payloadMimeType: string,
+    abortController: AbortController
   ): Promise<SignedObject> {
     try {
       const url = await this.getSignatureMobileAvmUrl(
@@ -268,12 +286,12 @@ export class CombinedClient {
         document,
         payloadMimeType
       );
-      const abortController = new AbortController();
+      // TODO when the user closes the UI we should abort the signing ??
       this.ui.showQRCode(url, abortController);
 
       return await this.getSignatureMobileSignDocument(abortController);
     } catch (e) {
-      log.error(e);
+      log.error("getSignatureMobile failed", e);
       throw e;
     }
   }
@@ -281,7 +299,8 @@ export class CombinedClient {
   private async getSignatureMobileOnMobile(
     document: DesktopAutogramDocument,
     signatureParameters: DesktopSignatureParameters,
-    payloadMimeType: string
+    payloadMimeType: string,
+    abortController: AbortController
   ): Promise<SignedObject> {
     try {
       const url = await this.getSignatureMobileAvmUrl(
@@ -290,12 +309,12 @@ export class CombinedClient {
         payloadMimeType
       );
 
-      this.ui.openMobileOnMobile(url, new AbortController());
+      this.ui.openMobileOnMobile(url, abortController);
       window.open(url, "_blank", "noopener");
 
-      return await this.getSignatureMobileSignDocument();
+      return await this.getSignatureMobileSignDocument(abortController);
     } catch (e) {
-      log.error(e);
+      log.error("getSignatureMobileOnMobile failed", e);
       throw e;
     }
   }
@@ -304,6 +323,7 @@ export class CombinedClient {
     signatureParameters: SignatureParameters,
     document: { filename?: string; content: string },
     payloadMimeType: string
+    // TODO add abortController here?
   ) {
     const params = signatureParameters;
     const container =

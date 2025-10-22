@@ -1,10 +1,25 @@
-export const EVENT_SCREEN = {
-  SIGN_READER: "autogram-sign-reader-screen",
-  SIGN_MOBILE: "autogram-sign-mobile-screen",
-};
-
-export const EVENT_CLOSE = "autogram-close";
+import { SigningMethod } from "./types";
 
 export const EVENT_SIGN = "autogram-sign";
 
 export const EVENT_SHOW_QR_CODE = "autogram-show-qr-code";
+
+export class EventChoice extends CustomEvent<{ method: SigningMethod }> {
+  constructor(method: SigningMethod) {
+    super("autogram-choice", {
+      detail: { method },
+      bubbles: true,
+      composed: true,
+    });
+  }
+}
+
+export class EventClose extends CustomEvent<null> {
+  constructor() {
+    super("autogram-close", {
+      detail: null,
+      bubbles: true,
+      composed: true,
+    });
+  }
+}

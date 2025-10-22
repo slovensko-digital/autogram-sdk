@@ -5,8 +5,9 @@ import { computerSvg, mobileSvg } from "./svg";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { AutogramBaseScreen } from "./base.screen";
 import { closeSvg } from "./svg";
-import { EVENT_SCREEN } from "./events";
+import { EventChoice } from "./events";
 import { createLogger } from "../log";
+import { SigningMethod } from "./types";
 
 const log = createLogger("ag-sdk:AutogramChoiceScreen");
 
@@ -44,21 +45,17 @@ export class AutogramChoiceScreen extends AutogramBaseScreen {
 
   signUsingReader() {
     log.debug("signUsingReader");
-    this.dispatchEvent(
-      new CustomEvent(EVENT_SCREEN.SIGN_READER, {
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this.dispatchEvent(new EventChoice(SigningMethod.reader));
   }
 
   signUsingMobile() {
     log.debug("signUsingMobile");
-    this.dispatchEvent(
-      new CustomEvent(EVENT_SCREEN.SIGN_MOBILE, {
-        bubbles: true,
-        composed: true,
-      })
-    );
+    // this.dispatchEvent(
+    //   new CustomEvent(EVENT_SCREEN.SIGN_MOBILE, {
+    //     bubbles: true,
+    //     composed: true,
+    //   })
+    // );
+    this.dispatchEvent(new EventChoice(SigningMethod.mobile));
   }
 }

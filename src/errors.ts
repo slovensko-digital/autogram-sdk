@@ -4,3 +4,10 @@ export class UserCancelledSigningException extends Error {
     this.name = "UserCancelledSigningException";
   }
 }
+
+export class AutogramSdkException extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AutogramSdkException";
+  }
+}

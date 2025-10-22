@@ -2,7 +2,7 @@ import { LitElement, html, css } from "lit";
 
 import { closeSvg } from "./svg";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
-import { EVENT_CLOSE } from "./events";
+import { EventClose } from "./events";
 
 export class AutogramBaseScreen extends LitElement {
   static styles = css`
@@ -153,8 +153,6 @@ export class AutogramBaseScreen extends LitElement {
   }
 
   close() {
-    this.dispatchEvent(
-      new CustomEvent(EVENT_CLOSE, { bubbles: true, composed: true })
-    );
+    this.dispatchEvent(new EventClose());
   }
 }
