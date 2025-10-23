@@ -212,7 +212,7 @@ export class CombinedClient {
     }
   }
 
-  public useRestorePoint(restorePoint: string): Promise<boolean> {
+  public useRestorePoint(restorePoint: string): Promise<SignedObject | null> {
     log.debug("useRestorePoint", restorePoint);
     return this.clientMobileIntegration.useRestorePoint(restorePoint);
   }

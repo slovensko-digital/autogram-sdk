@@ -4,6 +4,7 @@ import z from "zod";
 import { paths } from "./avm-api.generated";
 import { Base64 } from "js-base64";
 import { createLogger } from "../../log";
+import { SignedObject } from "../../with-ui";
 
 const log = createLogger("ag-sdk:AvmIntegration");
 
@@ -163,7 +164,7 @@ export class AutogramVMobileIntegration
    */
   public async checkDocumentStatus(
     documentRef: AvmIntegrationDocument
-  ): Promise<Pick<GetDocumentResult, "status">> {
+  ): Promise<GetDocumentResult> {
     if (!documentRef.guid || !documentRef.encryptionKey) {
       log.debug(documentRef);
       throw new Error("Document guid or key missing");
@@ -333,9 +334,7 @@ export interface AutogramVMobileIntegrationPrivateInterface {
   loadOrRegister(): Promise<void>;
   getQrCodeUrl(doc: AvmIntegrationDocument): Promise<string>;
   addDocument(documentToSign: DocumentToSign): Promise<AvmIntegrationDocument>;
-  checkDocumentStatus(
-    doc: AvmIntegrationDocument
-  ): Promise<Pick<GetDocumentResult, "status">>;
+  checkDocumentStatus(doc: AvmIntegrationDocument): Promise<GetDocumentResult>;
   waitForSignature(
     doc: AvmIntegrationDocument,
     abortController?: AbortController
@@ -379,14 +378,14 @@ export interface AutogramVMobileIntegrationInterfaceStateful {
    * When a page gets reloaded and you have a restorePoint set up, this method will:
    * 1. Check if a restore point with the given identifier exists
    * 2. If found, check if the document is already signed
-   * 3. If signed, restore the state and return true (signing complete)
-   * 4. If not signed yet, restore the state and return false (continue signing)
-   * 5. If no restore point exists, save the current state and return false
+   * 3. If signed, restore the state and return the signed document
+   * 4. If not signed yet, restore the state and return null (continue signing)
+   * 5. If no restore point exists, save the current state and return null
    *
    * @param restorePoint - A unique string/hash identifier for the restore point (e.g., document hash, session ID)
    * @returns Promise that resolves to:
-   *   - `true` if a restore point was found AND the document is already signed
-   *   - `false` if no restore point exists, or restore point found but document is still pending
+   *   - `SignedObject` if a restore point was found AND the document is already signed
+   *   - `null` if no restore point exists, or restore point found but document is still pending
    *
    * @example
    * ```typescript
@@ -397,11 +396,10 @@ export interface AutogramVMobileIntegrationInterfaceStateful {
    * const restorePoint = `doc-${documentHash}-${signers}-${url}`;
    *
    * // Check if we're restoring from a previous session
-   * const isRestored = await channel.useRestorePoint(restorePoint);
+   * const signedDoc = await channel.useRestorePoint(restorePoint);
    *
-   * if (isRestored) {
+   * if (signedDoc) {
    *   // Document was already signed during previous session
-   *   const signedDoc = await channel.waitForSignature(); // Will return immediately
    *   console.log("Document already signed:", signedDoc);
    * } else {
    *   // Either new signing or continuing from previous session
@@ -418,7 +416,7 @@ export interface AutogramVMobileIntegrationInterfaceStateful {
    * When user returns to browser, the page reloads. Using restore points,
    * the app can detect the document was already signed and complete without user interaction.
    */
-  useRestorePoint(restorePoint: string): Promise<boolean>;
+  useRestorePoint(restorePoint: string): Promise<SignedObject | null>;
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   AutogramVMobileIntegration,
 } from "./avm-api/lib/apiClient";
 import { createLogger } from "./log";
+import { SignedObject } from "./with-ui";
 
 const log = createLogger("ag-sdk:AvmSimpleChannel");
 
@@ -74,48 +75,60 @@ export class AvmSimpleChannel
     this.abortController = null;
   }
 
-  async useRestorePoint(restorePoint: string): Promise<boolean> {
+  async useRestorePoint(restorePoint: string): Promise<SignedObject | null> {
     const restoreKey = `restorePoint:${restorePoint}`;
-    
+
     // Try to load the saved document reference
     const savedDocumentRef = await get<AVMIntegrationDocument>(restoreKey);
-    
+
     if (!savedDocumentRef) {
       // No restore point found, save current state if we have a document
       if (this.documentRef) {
         await set(restoreKey, this.documentRef);
         log.info("Created new restore point", restorePoint);
       }
-      return false;
+      return null;
     }
-    
+
     // Restore point found, check if document is already signed
     try {
       if (!savedDocumentRef.guid || !savedDocumentRef.encryptionKey) {
         log.debug("Invalid saved document reference", savedDocumentRef);
-        return false;
+        return null;
       }
-      
+
       // Check document status without polling
-      const documentResult = await this.apiClient.checkDocumentStatus(savedDocumentRef);
-      
+      const documentResult = await this.apiClient.checkDocumentStatus(
+        savedDocumentRef
+      );
+
       if (documentResult.status === "signed") {
         // Document is signed, restore state and return true
         this.documentRef = savedDocumentRef;
         log.info("Restore point used - document already signed", restorePoint);
         // Clean up restore point
         await set(restoreKey, undefined);
-        return true;
+        return {
+          content: documentResult.document.content,
+          issuedBy:
+            documentResult.document.signers
+              ?.map((s) => s.issuedBy || "")
+              .join(", ") || "",
+          signedBy:
+            documentResult.document.signers
+              ?.map((s) => s.signedBy || "")
+              .join(", ") || "",
+        };
       } else {
         // TODO: does this make sense?
         // Document not signed yet, restore state for continued signing
         this.documentRef = savedDocumentRef;
         log.info("Restore point used - document pending", restorePoint);
-        return false;
+        return null;
       }
     } catch (error) {
       log.error("Error checking restore point", error);
-      return false;
+      return null;
     }
   }
 }
