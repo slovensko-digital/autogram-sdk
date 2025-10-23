@@ -237,6 +237,7 @@ export class CombinedClient {
         log.info(`Autogram ${info.version} is ready`);
       } catch (e) {
         log.error("launchDesktop failed, waiting for Autogram failed", e);
+        throw new AutogramSdkException("Nepodarilo sa spustiť Autogram.");
       }
     }
   }
