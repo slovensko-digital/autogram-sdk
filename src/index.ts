@@ -24,4 +24,4 @@ export {
 } from "./avm-api/index";
 export { AutogramVMobileSimulation } from "./avm-api/index";
 
-export { UserCancelledSigningException } from "./errors";
+export { UserCancelledSigningException, AutogramSdkException } from "./errors";

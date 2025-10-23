@@ -19,7 +19,7 @@ import { SigningMethod } from "./injected-ui/types";
 import { AutogramDesktopIntegrationInterface } from "./autogram-api/lib/apiClient";
 import { AutogramDesktopSimpleChannel } from "./channel-desktop";
 import { createLogger } from "./log";
-import { UserCancelledSigningException } from "./errors";
+import { AutogramSdkException, UserCancelledSigningException } from "./errors";
 
 export type SignedObject = DesktopSignResponseBody;
 // We have to leave this in because otherwise the custom elements are not registered
@@ -100,7 +100,7 @@ export class CombinedClient {
             resolve();
           }
         } catch (e) {
-          log.error(e);
+          log.error("CombinedClient init createUI failed", e);
           reject(e);
         }
       });
@@ -146,17 +146,29 @@ export class CombinedClient {
     payloadMimeType: string,
     decodeBase64 = false
   ) {
-    const signedObject = await this.signBasedOnUserChoice(
-      document,
-      signatureParameters,
-      payloadMimeType
-    );
-    return {
-      ...signedObject,
-      content: decodeBase64
-        ? Base64.decode(signedObject.content)
-        : signedObject.content,
-    };
+    try {
+      const signedObject = await this.signBasedOnUserChoice(
+        document,
+        signatureParameters,
+        payloadMimeType
+      );
+      return {
+        ...signedObject,
+        content: decodeBase64
+          ? Base64.decode(signedObject.content)
+          : signedObject.content,
+      };
+    } catch (e) {
+      if (e instanceof UserCancelledSigningException) {
+        log.info("User cancelled request");
+        this.ui.signingCancelled();
+        throw e;
+      } else if (e instanceof AutogramSdkException) {
+        this.ui.showError(e.message);
+      }
+      log.error("Signing failed", e);
+      throw e;
+    }
   }
 
   private async signBasedOnUserChoice(
@@ -167,25 +179,42 @@ export class CombinedClient {
     // TODO: remove
     log.debug("sign", this.ui);
     const signingMethod = await this.ui.startSigning();
+
+    log.debug("User chose signing method", signingMethod);
+
+    const abortController = new AbortController();
     if (signingMethod === SigningMethod.reader) {
-      const abortController = new AbortController();
       this.ui.desktopSigning(abortController);
       await this.launchDesktop(abortController);
       return this.getSignatureDesktop(
         document,
         signatureParameters,
-        payloadMimeType
+        payloadMimeType,
+        abortController
       );
     } else if (signingMethod === SigningMethod.mobile) {
       return this.getSignatureMobile(
         document,
         signatureParameters,
-        payloadMimeType
+        payloadMimeType,
+        abortController
+      );
+    } else if (signingMethod === SigningMethod.mobileOnMobile) {
+      return this.getSignatureMobileOnMobile(
+        document,
+        signatureParameters,
+        payloadMimeType,
+        abortController
       );
     } else {
       log.debug("Invalid signing method");
       throw new Error("Invalid signing method");
     }
+  }
+
+  public useRestorePoint(restorePoint: string): Promise<SignedObject | null> {
+    log.debug("useRestorePoint", restorePoint);
+    return this.clientMobileIntegration.useRestorePoint(restorePoint);
   }
 
   private async launchDesktop(abortController?: AbortController) {
@@ -194,7 +223,7 @@ export class CombinedClient {
       if (info.status != "READY") throw new Error("Wait for server");
       log.info(`Autogram ${info.version} is ready`);
     } catch (e) {
-      log.error(e);
+      log.error("launchDesktop failed, getting info failed", e);
       const url = await this.clientDesktopIntegration.getLaunchURL();
       log.info(`Opening "${url}"`);
       window.location.assign(url);
@@ -207,8 +236,8 @@ export class CombinedClient {
         );
         log.info(`Autogram ${info.version} is ready`);
       } catch (e) {
-        log.error("waiting for Autogram failed");
-        log.error(e);
+        log.error("launchDesktop failed, waiting for Autogram failed", e);
+        throw new AutogramSdkException("Nepodarilo sa spustiť Autogram.");
       }
     }
   }
@@ -216,11 +245,12 @@ export class CombinedClient {
   private async getSignatureDesktop(
     document: DesktopAutogramDocument,
     signatureParameters: DesktopSignatureParameters,
-    payloadMimeType: string
+    payloadMimeType: string,
+    abortController: AbortController
   ): Promise<SignedObject> {
     log.info("getSignatureDesktop");
     return this.clientDesktopIntegration
-      .sign(document, signatureParameters, payloadMimeType)
+      .sign(document, signatureParameters, payloadMimeType, abortController)
       .then((signedObject) => {
         // TODO("restart SignRequest?");
 
@@ -239,7 +269,7 @@ export class CombinedClient {
           this.ui.signingCancelled();
           throw reason;
         } else {
-          log.error(reason);
+          log.error("getSignatureDesktop failed", reason);
           throw reason;
         }
       });
@@ -248,63 +278,107 @@ export class CombinedClient {
   private async getSignatureMobile(
     document: DesktopAutogramDocument,
     signatureParameters: DesktopSignatureParameters,
-    payloadMimeType: string
+    payloadMimeType: string,
+    abortController: AbortController
   ): Promise<SignedObject> {
     try {
-      const params = signatureParameters;
-      const container =
-        params.container == null
-          ? null
-          : params.container == "ASiC_E"
-          ? "ASiC-E"
-          : "ASiC-S";
-
-      await this.clientMobileIntegration.loadOrRegister();
-      await this.clientMobileIntegration.addDocument({
-        document: document,
-        parameters: {
-          ...params,
-          container: container ?? undefined,
-        },
-        payloadMimeType: payloadMimeType,
-      });
-      const url = await this.clientMobileIntegration.getQrCodeUrl();
-      log.debug({ url });
-      const abortController = new AbortController();
-      this.ui.showQRCode(url, abortController);
-      const signedObject = await this.clientMobileIntegration.waitForSignature(
-        abortController
+      const url = await this.getSignatureMobileAvmUrl(
+        signatureParameters,
+        document,
+        payloadMimeType
       );
-      log.debug({ signedObject });
-      if (signedObject === null || signedObject === undefined) {
-        throw new Error("Signing cancelled");
-      }
+      // TODO when the user closes the UI we should abort the signing ??
+      this.ui.showQRCode(url, abortController);
 
-      // const signedObject2 = {
-      //   content: signedObject.content,
-      //   signedBy:
-      //     signedObject.signers?.at(-1)?.signedBy ?? "Používateľ Autogramu",
-      //   issuedBy: signedObject.signers?.at(-1)?.issuedBy ?? "(neznámy)",
-      // };
-
-      this.signerIdentificationListeners.forEach((cb) => cb());
-      this.signerIdentificationListeners = [];
-      this.signatureIndex++;
-
-      this.ui.hide();
-
-      this.clientMobileIntegration.reset();
-      this.ui.reset();
-      return {
-        content: signedObject.content,
-        signedBy:
-          signedObject.signers?.at(-1)?.signedBy ?? "Používateľ Autogramu",
-        issuedBy: signedObject.signers?.at(-1)?.issuedBy ?? "(neznámy)",
-      };
+      return await this.getSignatureMobileSignDocument(abortController);
     } catch (e) {
-      log.error(e);
+      log.error("getSignatureMobile failed", e);
       throw e;
     }
+  }
+
+  private async getSignatureMobileOnMobile(
+    document: DesktopAutogramDocument,
+    signatureParameters: DesktopSignatureParameters,
+    payloadMimeType: string,
+    abortController: AbortController
+  ): Promise<SignedObject> {
+    try {
+      const url = await this.getSignatureMobileAvmUrl(
+        signatureParameters,
+        document,
+        payloadMimeType
+      );
+
+      this.ui.openMobileOnMobile(url, abortController);
+      window.open(url, "_blank", "noopener");
+
+      return await this.getSignatureMobileSignDocument(abortController);
+    } catch (e) {
+      log.error("getSignatureMobileOnMobile failed", e);
+      throw e;
+    }
+  }
+
+  private async getSignatureMobileAvmUrl(
+    signatureParameters: SignatureParameters,
+    document: { filename?: string; content: string },
+    payloadMimeType: string
+    // TODO add abortController here?
+  ) {
+    const params = signatureParameters;
+    const container =
+      params.container == null
+        ? null
+        : params.container == "ASiC_E"
+        ? "ASiC-E"
+        : "ASiC-S";
+
+    await this.clientMobileIntegration.loadOrRegister();
+    await this.clientMobileIntegration.addDocument({
+      document: document,
+      parameters: {
+        ...params,
+        container: container ?? undefined,
+      },
+      payloadMimeType: payloadMimeType,
+    });
+    const url = await this.clientMobileIntegration.getQrCodeUrl();
+    log.debug({ url });
+    return url;
+  }
+
+  private async getSignatureMobileSignDocument(
+    abortController?: AbortController
+  ) {
+    const signedObject = await this.clientMobileIntegration.waitForSignature(
+      abortController
+    );
+    log.debug({ signedObject });
+    if (signedObject === null || signedObject === undefined) {
+      throw new Error("Signing cancelled");
+    }
+
+    // const signedObject2 = {
+    //   content: signedObject.content,
+    //   signedBy:
+    //     signedObject.signers?.at(-1)?.signedBy ?? "Používateľ Autogramu",
+    //   issuedBy: signedObject.signers?.at(-1)?.issuedBy ?? "(neznámy)",
+    // };
+    this.signerIdentificationListeners.forEach((cb) => cb());
+    this.signerIdentificationListeners = [];
+    this.signatureIndex++;
+
+    this.ui.hide();
+
+    this.clientMobileIntegration.reset();
+    this.ui.reset();
+    return {
+      content: signedObject.content,
+      signedBy:
+        signedObject.signers?.at(-1)?.signedBy ?? "Používateľ Autogramu",
+      issuedBy: signedObject.signers?.at(-1)?.issuedBy ?? "(neznámy)",
+    };
   }
 
   /**
