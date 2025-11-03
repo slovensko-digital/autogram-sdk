@@ -10,7 +10,7 @@ export class AutogramSigningCancelledScreen extends AutogramBaseScreen {
   render() {
     return html`
       <div class="heading">
-        <h1>Podpisujeme v Autograme</h1>
+        <h1>Podpisovanie zrušené</h1>
         <button class="close" @click="${this.close}">
           ${unsafeSVG(closeSvg)}
         </button>

@@ -12,20 +12,17 @@ export class AutogramSigningMobileOnMobileScreen extends AutogramBaseScreen {
   render() {
     return html`
       <div class="heading">
-        <h1>AVM</h1>
+        <h1>Autogram v mobile</h1>
         <button class="close" @click="${this.close}">
           ${unsafeSVG(closeSvg)}
         </button>
       </div>
       <div class="main">
-        <div class="col">
-          <p style="text-align: center;">
-            Podpisovanie by malo bežať samo. Ak sa aplikácia Autogram v obile
-            neotvorila automaticky, použite tlačidlo nižšie.
+        <div class="mobile-on-mobile-content">
+          <p>
+            Ak sa aplikácia Autogram v mobile neotvorila automaticky, použite tlačidlo nižšie.
           </p>
-        </div>
-        <div class="col">
-          <div style="text-align: center;">
+          <div class="button-wrapper">
             <a href="${this.url}" target="_blank" rel="noopener" class="button"
               >Otvoriť Autogram v mobile</a
             >

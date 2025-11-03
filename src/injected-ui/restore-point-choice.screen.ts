@@ -11,27 +11,31 @@ export class AutogramRestorePointChoiceScreen extends AutogramBaseScreen {
   render() {
     return html`
       <div class="heading">
-        <h1>Obnoviť?</h1>
+        <h1>Obnoviť podpis?</h1>
         <button class="close" @click="${this.close}">
           ${unsafeSVG(closeSvg)}
         </button>
       </div>
       <div class="main">
-        <p>
-          Zdá sa, že tento dokument ste už podpísali cez Autogram v Mobile. Chcete
-          použiť už podpísaný dokument?
-        </p>
+        <div class="restore-point-intro">
+          <p>
+            Zdá sa, že tento dokument ste už podpísali cez Autogram v Mobile.
+          </p>
+          <p>
+            Chcete použiť už podpísaný dokument?
+          </p>
+        </div>
         <div class="choice-screen">
           <button class="tile" @click="${this.chooseUseRestorePoint(true)}">
-            <h2>Áno, pokračovať</h2>
+            <h2>Áno, obnoviť podpis</h2>
             <div>
-              Použijeme už podpísaný dokument z <b>Autogram v Mobile</b>.
+              Použijeme už podpísaný dokument z Autogramu v mobile.
             </div>
           </button>
 
           <button class="tile" @click="${this.chooseUseRestorePoint(false)}">
             <h2>Nie, začať odznova</h2>
-            <div>Chcem podpísať dokument znovu.</div>
+            <div>Spustí sa podpisovanie Autogramom v mobile.</div>
           </button>
         </div>
       </div>
