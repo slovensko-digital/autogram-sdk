@@ -18,7 +18,7 @@ export class AutogramRestorePointChoiceScreen extends AutogramBaseScreen {
       </div>
       <div class="main">
         <p>
-          Zdá sa,tento dokument ste už podpísali cez Autogram v Mobile. Chcete
+          Zdá sa, že tento dokument ste už podpísali cez Autogram v Mobile. Chcete
           použiť už podpísaný dokument?
         </p>
         <div class="choice-screen">
