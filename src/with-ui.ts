@@ -212,9 +212,21 @@ export class CombinedClient {
     }
   }
 
-  public useRestorePoint(restorePoint: string): Promise<SignedObject | null> {
+  public async useRestorePoint(
+    restorePoint: string
+  ): Promise<SignedObject | null> {
     log.debug("useRestorePoint", restorePoint);
-    return this.clientMobileIntegration.useRestorePoint(restorePoint);
+
+    let restored = await this.clientMobileIntegration.useRestorePoint(
+      restorePoint
+    );
+
+    if (restored !== null) {
+      if (await this.ui.maybeRestoreRestorePoint()) {
+        return restored;
+      }
+    }
+    return null;
   }
 
   private async launchDesktop(abortController?: AbortController) {

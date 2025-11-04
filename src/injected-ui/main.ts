@@ -6,8 +6,9 @@ import "./sign-reader.screen";
 import "./sign-mobile.screen";
 import "./sign-mobile-on-mobile.screen";
 import "./signing-cancelled.screen";
+import "./restore-point-choice.screen";
 import "./error.screen";
-import { EventChoice, EventClose } from "./events";
+import { EventChoice, EventClose, EventRestorePointResult } from "./events";
 import { SigningMethod } from "./types";
 import { createLogger } from "../log";
 import { UserCancelledSigningException } from "../errors";
@@ -22,6 +23,7 @@ enum Screens {
   signMobile,
   signingCancelled,
   signMobileOnMobile,
+  useRestorePoint,
   error,
 }
 
@@ -114,6 +116,16 @@ export class AutogramRoot extends LitElement {
     }
   }
 
+  _handleRestorePointChoice(event: EventRestorePointResult) {
+    log.debug("_handleRestorePointChoice", event.detail);
+    if (this.restorePointResult) {
+      this.restorePointResult.resolve(event.detail);
+      this.restorePointResult = null;
+      this.hide();
+      this.reset();
+    }
+  }
+
   render() {
     log.debug("render");
     return html`
@@ -141,6 +153,11 @@ export class AutogramRoot extends LitElement {
               @autogram-close=${this._closeSigningScreen}
               url=${this.mobileSigningUrl}
             ></autogram-signing-mobile-on-mobile-screen>`
+          : this.screen === Screens.useRestorePoint
+          ? html`<autogram-restore-point-choice-screen
+              @autogram-close=${this._closeNow}
+              @autogram-restore-point-result=${this._handleRestorePointChoice}
+            ></autogram-restore-point-choice-screen>`
           : this.screen === Screens.error
           ? html`<autogram-error-screen
               @autogram-close=${this._closeNow}
@@ -177,6 +194,18 @@ export class AutogramRoot extends LitElement {
     this.choiceResult = promiseWithResolvers<SigningMethod>();
 
     return this.choiceResult.promise;
+  }
+
+  private restorePointResult: PromiseWithResolvers<boolean> | null = null;
+
+  public async maybeRestoreRestorePoint() {
+    log.debug("maybeRestoreRestorePoint");
+
+    this.restorePointResult = promiseWithResolvers<boolean>();
+    this.screen = Screens.useRestorePoint;
+    this.show();
+
+    return this.restorePointResult.promise;
   }
 
   desktopSigning(abortController: AbortController) {

@@ -23,3 +23,13 @@ export class EventClose extends CustomEvent<null> {
     });
   }
 }
+
+export class EventRestorePointResult extends CustomEvent<boolean> {
+  constructor(useRestorePoint: boolean) {
+    super("autogram-restore-point-result", {
+      detail: useRestorePoint,
+      bubbles: true,
+      composed: true,
+    });
+  }
+}

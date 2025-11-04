@@ -72,7 +72,7 @@ export class AutogramSignMobileScreen extends AutogramBaseScreen {
           </div>
           <div class="col">
             <a href="${this.url}" target="_blank" rel="noopener">
-              <figure style="width: 200px; height: 200px;">
+              <figure style="width: 250px; height: 250px;">
                 ${unsafeSVG(qrCode)}
               </figure>
             </a>
