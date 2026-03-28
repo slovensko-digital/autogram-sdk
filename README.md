@@ -1,4 +1,10 @@
-# Autogram SDK - use Autogram signer from web
+
+
+# Merged into monorepo https://github.com/slovensko-digital/autogram-extension
+
+-----
+
+# (archived) Autogram SDK - use Autogram signer from web
 
 Autogram SDK is a TS/JS library that allows you to use the Autogram signer family (Autogram, Autogram V Mobile) from web. Not only does it provide an API to sign documents, but it also adds a UI for a consistent process of choosing the signer process (desktop/mobile).
 
